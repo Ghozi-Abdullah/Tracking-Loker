@@ -1,28 +1,43 @@
 <div align="center">
 
-# Loker Radar
+# Tracking Loker
 
 **Semua lowongan kerja di Indonesia dalam satu layar, diperbarui sendiri setiap pagi.**
 
-[**Buka Loker Radar →**](https://ghozi-abdullah.github.io/Loker-Radar/)
+[**Buka Tracking Loker →**](https://ghozi-abdullah.github.io/Tracking-Loker/)
 
 </div>
 
-Loker Radar mengumpulkan lowongan kerja dari **Karirhub Kemnaker**, bursa kerja resmi Kementerian Ketenagakerjaan, dan dari **situs karier perusahaan**. Setiap pagi pukul 06.00 WIB, belasan ribu lowongan ditarik ulang: lowongan baru masuk, lowongan yang sudah ditutup hilang, dan angka pasar kerjanya ikut berubah.
+![Halaman lowongan Tracking Loker](layar-lowongan.png)
 
-Karirhub sendiri sudah menghimpun lowongan dari Glints, JobStreet, Toploker, HiredToday, dan platform lain. Loker Radar menyajikannya dengan pencarian yang cepat, filter yang benar-benar dipakai pencari kerja, dan gambaran pasar kerja yang bisa dibaca dalam semenit.
+Tracking Loker mengumpulkan lowongan kerja dari **Karirhub Kemnaker**, bursa kerja resmi Kementerian Ketenagakerjaan, dan dari **situs karier perusahaan**. Setiap pagi pukul 06.00 WIB, hampir 20 ribu lowongan dari lebih dari 6 ribu perusahaan di 38 provinsi ditarik ulang: lowongan baru masuk, lowongan yang sudah ditutup hilang, dan angka pasar kerjanya ikut berubah.
 
-## Kenapa Loker Radar
+Karirhub sendiri sudah menghimpun lowongan dari portal mitranya, seperti Toploker, Glints, HiredToday, Kalibrr, Kitalulus, dan REDY, ditambah lowongan yang diposting perusahaan langsung di Karirhub. Tracking Loker menyajikannya dengan pencarian yang cepat, filter yang benar-benar dipakai pencari kerja, dan gambaran pasar kerja yang bisa dibaca dalam semenit.
+
+## Kenapa Tracking Loker
 
 **Selalu segar tanpa disentuh.** Tidak ada yang mengetik ulang lowongan. Robot di GitHub Actions menarik data setiap pagi, lalu situs langsung memakai data terbaru.
 
 **Filter yang jujur soal syarat.** Pilih pendidikanmu, dan yang tampil hanya lowongan yang syaratnya setara atau di bawahnya. Pilih "Gaji ≥ 5 jt", dan yang tampil hanya lowongan yang memang mencantumkan angka itu.
 
-**Langsung ke sumber resmi.** Tombol lamar selalu membawa ke halaman lowongan aslinya, di Karirhub, platform asal, atau situs karier perusahaan. Loker Radar tidak menyimpan data pelamar.
+**Langsung ke sumber resmi.** Tombol lamar selalu membawa ke halaman lowongan aslinya, di Karirhub, platform asal, atau situs karier perusahaan. Tracking Loker tidak menyimpan data pelamar.
+
+**Menemani, bukan cuma mendaftar.** Mencari kerja itu melelahkan. Tracking Loker menyapa dengan tampilan yang ceria dan pesan semangat yang berganti setiap hari, untuk teman-teman yang masih berjuang.
 
 **Ringan dan gratis.** Satu halaman statis di GitHub Pages. Tanpa akun, tanpa iklan, tanpa server.
 
 ## Fitur
+
+### Mulai dari yang paling dekat denganmu
+Empat kartu warna-warni langsung membuka lowongan untuk **lulusan SMA/SMK**, **magang**, lowongan yang **baru masuk hari ini**, dan **gaji di atas 5 juta**, lengkap dengan jumlahnya hari itu.
+
+### Pesan semangat setiap hari
+Setiap hari ada pesan baru untuk yang masih mencari kerja, dari "Istirahat boleh, menyerah jangan" sampai tips kecil seperti melamar di hari-hari pertama lowongan dibuka. Satu ketukan langsung membawa ke lowongan yang baru masuk.
+
+![Kartu kategori dan pesan semangat](layar-semangat.png)
+
+### Cari sesuai jurusan
+Ketik jurusanmu, misalnya Akuntansi, DKV, Teknik Mesin, atau singkatan jurusan SMK seperti TKJ dan AKL, lalu Tracking Loker menampilkan lowongan yang cocok. Karena lowongan jarang mencantumkan jurusan secara rapi, kecocokannya dilihat dari bidang pekerjaan dan judul lowongan. Ada 29 rumpun jurusan, dari kesehatan, teknik, dan bisnis sampai perhotelan, pertanian, dan pelayaran.
 
 ### Cari dalam hitungan milidetik
 Ketik posisi, nama perusahaan, atau kota, dan hasilnya berubah saat mengetik. Saring berdasarkan provinsi, kota/kabupaten, bidang pekerjaan, tipe kerja (full time, kontrak, magang, paruh waktu), pendidikan, gaji, waktu posting, dan sumber. Pilihan provinsi, kota, bidang, tipe kerja, dan sumber menampilkan jumlah lowongannya sebelum dipilih. Kombinasi filter tersimpan di alamat halaman dan bisa dibagikan.
@@ -33,30 +48,34 @@ Buka satu lowongan untuk melihat gaji, lokasi, syarat pendidikan, bidang, indust
 ### Pasar kerja dalam satu layar
 Halaman **Pasar** merangkum lowongan aktif, lowongan baru dalam 24 jam, jumlah perusahaan yang merekrut, dan median gaji yang dicantumkan. Lihat provinsi dan bidang dengan lowongan terbanyak, perusahaan yang paling aktif merekrut, median gaji per bidang, porsi syarat pendidikan dan tipe kerja, serta tren jumlah lowongan dari hari ke hari. Semua bisa dipersempit ke satu provinsi, dan setiap baris bisa diklik untuk langsung melihat lowongannya.
 
+![Halaman pasar kerja Tracking Loker](layar-pasar.png)
+
 ### Simpan untuk nanti
 Tandai lowongan yang menarik. Simpanan tersimpan di perangkatmu, dan lowongan yang sudah ditutup diberi tanda supaya tidak terlewat.
 
 ### Nyaman di HP
 Dirancang dari awal untuk layar ponsel: filter muncul sebagai lembar dari bawah, detail lowongan terbuka satu sentuhan, dan menu ada di jangkauan jempol.
 
+![Tracking Loker di ponsel](layar-ponsel.png)
+
 ## Data
 
 | Sumber | Isi | Cara ditarik |
 |---|---|---|
-| [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) | Lowongan dalam negeri dari pemberi kerja dan platform mitra Kemnaker | API publik Karirhub, semua halaman, setiap hari |
+| [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) | Lowongan dalam negeri yang diposting perusahaan di Karirhub dan dari portal mitranya (Toploker, Glints, HiredToday, Kalibrr, Kitalulus, REDY, Diploy) | API publik Karirhub, semua halaman, setiap hari |
 | Situs karier perusahaan | Lowongan berlokasi di Indonesia dari perusahaan di [`perusahaan.json`](perusahaan.json) (Greenhouse, Lever, Ashby) | API papan karier publik, setiap hari |
 
 Setiap penarikan dicatat di `stats.json` (lowongan aktif, baru, dan ditutup per hari) sehingga tren pasar kerja terbentuk dengan sendirinya. Bila satu sumber gagal ditarik, lowongan lamanya tetap ditampilkan sampai sumber itu kembali, jadi situs tidak pernah tiba-tiba kosong.
 
-Gaji ditampilkan apa adanya dari sumber, dalam rupiah per bulan. Hanya sebagian lowongan yang mencantumkan gaji, dan angka median dihitung dari lowongan tersebut saja.
+Gaji ditampilkan apa adanya dari sumber, dalam rupiah per bulan. Hanya sekitar 15% lowongan yang mencantumkan gaji, dan angka median dihitung dari lowongan tersebut saja. Angka di bawah Rp500 ribu, yang biasanya upah harian atau per paket, tidak dihitung sebagai gaji bulanan. Lokasi yang hanya berupa kecamatan dilengkapi kota dan provinsinya dari halaman detail lowongan bila tersedia.
 
 ## Keamanan pencari kerja
 
-Lowongan resmi tidak pernah memungut biaya. Loker Radar mengingatkan hal ini di setiap detail lowongan dan selalu mengarahkan pelamar ke halaman resmi lowongan.
+Lowongan resmi tidak pernah memungut biaya. Tracking Loker mengingatkan hal ini di setiap detail lowongan dan selalu mengarahkan pelamar ke halaman resmi lowongan.
 
 ## Dibangun dengan
 
-Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Google Sans Flex
+Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Google Sans Flex · Ilustrasi Notionists
 
 ---
 
@@ -64,6 +83,6 @@ Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Goog
 
 Dibuat oleh [Ghozi Abdullah](https://github.com/Ghozi-Abdullah) · Proyek Hari 2 dari **#30Hari30Website**
 
-Lisensi MIT · Data lowongan milik [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) dan masing-masing perusahaan · Loker Radar tidak berafiliasi dengan Kementerian Ketenagakerjaan · Huruf Google Sans Flex (SIL Open Font License)
+Lisensi MIT · Data lowongan milik [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) dan masing-masing perusahaan · Tracking Loker tidak berafiliasi dengan Kementerian Ketenagakerjaan · Huruf Google Sans Flex (SIL Open Font License) · Ilustrasi [Notionists](https://www.dicebear.com/styles/notionists/) oleh Zoish (CC0) lewat DiceBear
 
 </div>

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Loker Radar: penarik data lowongan harian.
+"""Tracking Loker: penarik data lowongan harian.
 
 Sumber
   1. Karirhub Kemnaker, lewat API publik yang juga dipakai situs karirhub.kemnaker.go.id.
@@ -41,6 +41,19 @@ HISTORY_DAYS = 180
 # Penarikan dianggap utuh bila minimal 90% dari total yang dilaporkan API berhasil diambil.
 COMPLETE_RATIO = 0.9
 MAX_PAGES = 4000
+# Lowongan yang lokasinya hanya kecamatan dilengkapi dari halaman detail; dibatasi per hari supaya
+# penarikan tetap selesai jauh sebelum batas waktu GitHub Actions.
+DETAIL_CAP = 600
+DETAIL_BUDGET_SEC = 30 * 60
+# Gaji di bawah ini hampir pasti upah harian/per paket, bukan gaji bulanan.
+MIN_MONTHLY = 500_000
+TYPE_NAMES = {
+    "contract": "Kontrak", "kontrak": "Kontrak",
+    "internship": "Magang", "intern": "Magang", "magang": "Magang",
+    "full time": "Full time", "full-time": "Full time", "fulltime": "Full time",
+    "part time": "Part time", "part-time": "Part time", "parttime": "Part time",
+    "freelance": "Freelance", "daily": "Harian", "harian": "Harian",
+}
 FIELDS = [
     "id", "title", "company", "city", "province", "platform", "function",
     "industry", "type", "edu", "smin", "smax", "posted", "expires", "first", "via",
@@ -56,7 +69,7 @@ def log(msg: str) -> None:
 
 def _user_agent() -> str:
     repo = os.environ.get("GITHUB_REPOSITORY", "")
-    return f"LokerRadar/1.0 (+https://github.com/{repo})" if repo else "LokerRadar/1.0"
+    return f"TrackingLoker/1.0 (+https://github.com/{repo})" if repo else "TrackingLoker/1.0"
 
 
 def http_json(url: str, params: dict | None = None, tries: int = 4, timeout: int = 40):
@@ -227,12 +240,16 @@ def salary(row: dict) -> tuple[int, int]:
     currency = str(row.get("min_salary_currency") or row.get("max_salary_currency") or "IDR").upper()
     if currency != "IDR":
         return 0, 0
-    # Angka di bawah Rp100.000 hampir pasti salah ketik (mis. "5" untuk 5 juta); abaikan.
-    lo = lo if lo >= 100_000 else 0
-    hi = hi if hi >= 100_000 else 0
+    lo = lo if lo >= MIN_MONTHLY else 0
+    hi = hi if hi >= MIN_MONTHLY else 0
     if lo and hi and lo > hi:
         lo, hi = hi, lo
     return lo, hi
+
+
+def job_type(name) -> str:
+    name = clean(name)
+    return TYPE_NAMES.get(name.lower(), name)
 
 
 def from_karirhub(row: dict, refs: dict) -> dict | None:
@@ -264,7 +281,7 @@ def from_karirhub(row: dict, refs: dict) -> dict | None:
         "platform": clean(row.get("platform_name")) or "Karirhub",
         "function": clean(row.get("job_function_name")),
         "industry": clean(row.get("industry_name")),
-        "type": clean(row.get("job_type_name")),
+        "type": job_type(row.get("job_type_name")),
         "edu": refs["educations"].get(str(row.get("education_id") or ""), ""),
         "smin": lo,
         "smax": hi,
@@ -273,6 +290,78 @@ def from_karirhub(row: dict, refs: dict) -> dict | None:
         "via": "karirhub",
         "link": strip_tracking(clean(row.get("platform_link"))),
     }
+
+
+def place_from_detail(detail: dict, refs: dict) -> tuple[str, str]:
+    """(kota/kabupaten, provinsi) dari detail lowongan Karirhub.
+
+    Urutan: nama wilayah ("Kecamatan, Kota, Provinsi"), id di objek wilayah, lalu alamat perusahaan.
+    """
+    provinces, cities = refs["provinces"], refs["cities"]
+    prov_by_name = {n.lower(): n for n in provinces.values() if n}
+    city_by_name = {n.lower(): (n, pid) for n, pid in cities.values() if n}
+    city, prov = "", ""
+    region = detail.get("region") if isinstance(detail.get("region"), dict) else {}
+    regionable = region.get("regionable") if isinstance(region.get("regionable"), dict) else {}
+
+    for part in reversed([clean(p) for p in str(region.get("name") or "").split(",")]):
+        low = part.lower()
+        if not prov and low in prov_by_name:
+            prov = prov_by_name[low]
+        elif not city and low in city_by_name:
+            city = city_by_name[low][0]
+            prov = prov or provinces.get(city_by_name[low][1], "")
+    if not city and region.get("regionable_type") == "city" and clean(regionable.get("name")).lower() in city_by_name:
+        city = city_by_name[clean(regionable.get("name")).lower()][0]
+    for cid in (regionable.get("city_id"), detail.get("city_id")):
+        cid = str(cid or "")
+        if not city and cid in cities:
+            city = cities[cid][0]
+            prov = prov or provinces.get(cities[cid][1], "")
+    pid = str(regionable.get("province_id") or "")
+    if not prov and pid in provinces:
+        prov = provinces[pid]
+    employer = detail.get("employer") if isinstance(detail.get("employer"), dict) else {}
+    if not prov:
+        cid, pid = str(employer.get("city_id") or ""), str(employer.get("province_id") or "")
+        if not city and cid in cities:
+            city = cities[cid][0]
+        prov = provinces.get(pid, "") or (provinces.get(cities[cid][1], "") if cid in cities else "")
+    return city, prov
+
+
+def fill_locations(jobs: list[dict], prev: dict, checked: set[str], refs: dict, started: float) -> set[str]:
+    """Lengkapi provinsi untuk lowongan yang lokasinya hanya kecamatan. Mengembalikan id yang sudah dicoba."""
+    todo = []
+    for job in jobs:
+        if job["via"] != "karirhub" or job["province"]:
+            continue
+        old = prev.get(job["id"])
+        if old and old.get("province"):
+            job["city"], job["province"] = old["city"], old["province"]
+        elif job["id"] not in checked:
+            todo.append(job)
+    done = {j["id"] for j in jobs if j["id"] in checked}
+    filled = 0
+    for job in todo[:DETAIL_CAP]:
+        if time.monotonic() - started > DETAIL_BUDGET_SEC:
+            log("  batas waktu detail tercapai, sisanya dilanjutkan besok")
+            break
+        try:
+            detail = (fetch(f"{LISTING}/{job['id']}") or {}).get("data") or {}
+        except Exception as err:  # noqa: BLE001
+            log(f"  detail {job['id']} gagal: {err}")
+            continue
+        city, prov = place_from_detail(detail, refs)
+        if prov:
+            job["province"] = prov
+            job["city"] = city or job["city"]
+            filled += 1
+        done.add(job["id"])
+        sleep(0.2)
+    if todo:
+        log(f"Lokasi dilengkapi: {filled} dari {min(len(todo), DETAIL_CAP)} lowongan (antrean {len(todo)})")
+    return done
 
 
 def fetch_karirhub(refs: dict, max_pages: int = MAX_PAGES):
@@ -340,14 +429,14 @@ def from_board(kind: str, company: dict, raw: dict, provinces: dict) -> dict | N
         loc = (raw.get("location") or {}).get("name", "")
         title, link = raw.get("title"), raw.get("absolute_url")
         posted = iso_epoch(raw.get("first_published") or raw.get("updated_at"))
-        job_type, function = "", ""
+        work, function = "", ""
         ident = raw.get("id")
     elif kind == "lever":
         cats = raw.get("categories") or {}
         loc = ", ".join(filter(None, [cats.get("location"), *(cats.get("allLocations") or [])]))
         title, link = raw.get("text"), raw.get("hostedUrl")
         posted = iso_epoch(raw.get("createdAt"))
-        job_type, function = cats.get("commitment") or "", cats.get("team") or ""
+        work, function = cats.get("commitment") or "", cats.get("team") or ""
         ident = raw.get("id")
     elif kind == "ashby":
         loc = ", ".join(filter(None, [raw.get("location"), *[
@@ -355,16 +444,14 @@ def from_board(kind: str, company: dict, raw: dict, provinces: dict) -> dict | N
         ]]))
         title, link = raw.get("title"), raw.get("jobUrl")
         posted = iso_epoch(raw.get("publishedAt"))
-        job_type, function = raw.get("employmentType") or "", raw.get("department") or ""
+        work, function = raw.get("employmentType") or "", raw.get("department") or ""
         ident = raw.get("id")
     else:
         return None
     place = indonesia_place(loc, provinces)
     if place is None or not title or not ident:
         return None
-    job_type = {"FullTime": "Full time", "PartTime": "Part time", "Intern": "Magang",
-                "Contract": "Kontrak", "Full-time": "Full time", "Part-time": "Part time",
-                "Internship": "Magang"}.get(job_type, job_type)
+    work = job_type({"FullTime": "Full time", "PartTime": "Part time"}.get(work, work))
     return {
         "id": f"{kind[:2]}-{company['slug']}-{ident}",
         "title": clean(title),
@@ -375,7 +462,7 @@ def from_board(kind: str, company: dict, raw: dict, provinces: dict) -> dict | N
         "platform": f"Karier {clean(name)}",
         "function": clean(function),
         "industry": clean(company.get("industri") or ""),
-        "type": clean(job_type),
+        "type": work,
         "edu": "",
         "smin": 0,
         "smax": 0,
@@ -525,10 +612,12 @@ def write_json(path: Path, data) -> None:
 def run(out_dir: Path, max_pages: int = MAX_PAGES, now: datetime | None = None) -> int:
     now = now or datetime.now(WIB)
     now_ts = int(now.timestamp())
+    started = time.monotonic()
     jobs_path, links_path, stats_path = out_dir / "jobs.json", out_dir / "links.json", out_dir / "stats.json"
 
     prev_data = read_json(jobs_path, {})
     prev = decode(prev_data)
+    checked = set(prev_data.get("checked") or []) if isinstance(prev_data, dict) else set()
     old_links = read_json(links_path, {})
     for job_id, job in prev.items():
         job["link"] = old_links.get(job_id, "")
@@ -564,11 +653,16 @@ def run(out_dir: Path, max_pages: int = MAX_PAGES, now: datetime | None = None) 
         log("Tidak ada data yang berhasil ditarik; berkas lama tidak diubah.")
         return 1
 
+    checked = fill_locations(fresh, prev, checked, refs, started)
+
     jobs, added, closed = merge(prev, fresh, complete, day_number(now), now_ts)
     first_run = not prev
+    unresolved = {j["id"] for j in jobs if j["via"] == "karirhub" and not j["province"]}
     meta = {
         "updated": now.isoformat(timespec="seconds"),
         "sources": sources,
+        # Lowongan yang detailnya sudah dicek tapi lokasinya tetap tak diketahui: tidak dicek ulang.
+        "checked": sorted(i for i in checked if i in unresolved),
     }
     write_json(jobs_path, encode(jobs, meta))
     write_json(links_path, {j["id"]: j["link"] for j in jobs if j.get("link")})
@@ -582,14 +676,14 @@ def run(out_dir: Path, max_pages: int = MAX_PAGES, now: datetime | None = None) 
     step = os.environ.get("GITHUB_STEP_SUMMARY")
     if step:
         with open(step, "a", encoding="utf-8") as fh:
-            fh.write(f"### Loker Radar {now:%d-%m-%Y %H.%M} WIB\n\n{summary}\n\n| Sumber | Lowongan | Status |\n|---|---|---|\n")
+            fh.write(f"### Tracking Loker {now:%d-%m-%Y %H.%M} WIB\n\n{summary}\n\n| Sumber | Lowongan | Status |\n|---|---|---|\n")
             for s in sources:
                 fh.write(f"| {s['name']} | {s['count']} | {'OK' if s['ok'] else 'Gagal: ' + s.get('error', '')} |\n")
     return 0
 
 
 def main(argv=None) -> int:
-    parser = argparse.ArgumentParser(description="Tarik lowongan harian untuk Loker Radar.")
+    parser = argparse.ArgumentParser(description="Tarik lowongan harian untuk Tracking Loker.")
     parser.add_argument("--out", type=Path, default=HERE, help="folder tujuan jobs.json / links.json / stats.json")
     parser.add_argument("--max-pages", type=int, default=MAX_PAGES, help="batas halaman Karirhub (untuk uji cepat)")
     args = parser.parse_args(argv)

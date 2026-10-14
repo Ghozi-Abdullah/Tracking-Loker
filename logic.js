@@ -1,4 +1,4 @@
-// Loker Radar: fungsi murni (tanpa DOM) untuk membaca data, menyaring, dan meringkas lowongan.
+// Tracking Loker: fungsi murni (tanpa DOM) untuk membaca data, menyaring, dan meringkas lowongan.
 // Diuji di logic.test.mjs.
 
 export const KARIRHUB_WEB = 'https://karirhub.kemnaker.go.id';
@@ -70,8 +70,132 @@ export const SORTS = [
 export const DIRECT = '@perusahaan';
 
 export const EMPTY_FILTERS = Object.freeze({
-  q: '', prov: '', city: '', fn: '', types: [], edu: '', gaji: '', waktu: '', src: '', sort: ''
+  q: '', jur: '', prov: '', city: '', fn: '', types: [], edu: '', gaji: '', waktu: '', src: '', sort: ''
 });
+
+// ---------- Jurusan ----------
+// Karirhub tidak mencantumkan jurusan secara rapi, jadi jurusan dicocokkan lewat bidang pekerjaan (fns)
+// dan kata kunci di judul lowongan (kw). aka = nama lain yang mungkin diketik pengguna (termasuk jurusan SMK).
+export const MAJORS = [
+  { label: 'Akuntansi', aka: ['akuntansi', 'accounting', 'akuntan', 'perpajakan', 'pajak', 'akl', 'akuntansi keuangan lembaga', 'komputerisasi akuntansi'],
+    fns: ['Akuntansi & Keuangan', 'Akuntan Perpajakan', 'Audit Intern / Pengawasan', 'Keuangan, Analis', 'Penggajian dan Fasilitas'],
+    kw: ['akuntan', 'accounting', 'accountant', 'finance', 'keuangan', 'pajak', 'tax', 'audit', 'auditor', 'kasir', 'cashier', 'payroll', 'bookkeeping', 'treasury'] },
+  { label: 'Manajemen', aka: ['manajemen', 'management', 'administrasi bisnis', 'bisnis', 'manajemen bisnis', 'business'],
+    fns: ['Manajemen Operasional', 'Management Trainee', 'Penjualan dan Pengembangan Bisnis', 'Manajemen Merk / Produk', 'Manajemen Proyek', 'Pengembangan Produk', 'Procurement', 'Pembelian / Purchasing'],
+    kw: ['management trainee', 'manager', 'manajer', 'business development', 'operasional', 'operations', 'purchasing', 'procurement', 'project officer'] },
+  { label: 'Ekonomi & Perbankan', aka: ['ekonomi', 'perbankan', 'ekonomi pembangunan', 'keuangan dan perbankan', 'banking', 'ekonomi syariah', 'perbankan syariah'],
+    fns: ['Operasi Perbankan', 'Kredit / Pinjaman', 'Keuangan, Analis', 'Investasi dan Keuangan', 'Ahli Ekonomi', 'Sekuritas, Trader', 'Kolektor'],
+    kw: ['bank', 'banking', 'teller', 'kredit', 'credit', 'financial', 'collection', 'collector', 'relationship officer', 'funding'] },
+  { label: 'Teknik Informatika', aka: ['teknik informatika', 'informatika', 'ilmu komputer', 'sistem informasi', 'it', 'ti', 'teknologi informasi', 'rpl', 'rekayasa perangkat lunak', 'tkj', 'teknik komputer jaringan', 'teknik komputer', 'computer science'],
+    fns: ['IT', 'TI, Network Engineer', 'Teknik, Perangkat Lunak', 'TI, Administrator', 'TI, Systems Analyst', 'TI, Web Developer', 'TI, Programmer', 'Pemrosesan Data', 'Teknik, Jaringan', 'Teknik, Perangkat Keras'],
+    kw: ['developer', 'programmer', 'software', 'it support', 'it staff', 'data analyst', 'data scientist', 'data engineer', 'network', 'web', 'frontend', 'front end', 'backend', 'back end', 'fullstack', 'full stack', 'devops', 'sysadmin', 'qa engineer', 'tester', 'helpdesk', 'it'] },
+  { label: 'Desain Komunikasi Visual', aka: ['dkv', 'desain komunikasi visual', 'desain grafis', 'desain', 'design', 'multimedia', 'animasi', 'desain produk', 'seni rupa'],
+    fns: ['Design', 'Desainer Grafis Komputer', 'Juru Gambar', 'Fotografer'],
+    kw: ['desain', 'design', 'designer', 'desainer', 'graphic', 'grafis', 'ui', 'ux', 'ilustrator', 'illustrator', 'video editor', 'videografer', 'videographer', 'fotografer', 'photographer', 'animator', 'motion', 'content creator', 'multimedia'] },
+  { label: 'Ilmu Komunikasi', aka: ['ilmu komunikasi', 'komunikasi', 'jurnalistik', 'hubungan masyarakat', 'humas', 'public relations', 'penyiaran', 'broadcasting'],
+    fns: ['Marketing dan Relasi Publik', 'Hubungan Masyarakat', 'Komunikasi', 'Penulis / Media & Jurnalisme / Percetakan dan Penerbitan', 'Editor', 'Reporter', 'Penyiar, TV / Radio', 'Pemasaran Internet'],
+    kw: ['public relation', 'humas', 'content', 'copywriter', 'social media', 'jurnalis', 'journalist', 'reporter', 'editor', 'media', 'host', 'presenter', 'announcer', 'komunikasi', 'communication'] },
+  { label: 'Pemasaran', aka: ['pemasaran', 'marketing', 'bisnis daring dan pemasaran', 'bdp', 'digital marketing', 'manajemen pemasaran'],
+    fns: ['Penjualan dan Pemasaran', 'Pemasaran (Non-Teknis)', 'Pemasaran (Teknis)', 'Pemasaran Internet', 'Telemarketing', 'Merchandiser', 'Penjualan (Non-Teknis)', 'Penjualan (Teknis)'],
+    kw: ['marketing', 'pemasaran', 'sales', 'digital marketing', 'brand', 'telemarketing', 'merchandiser', 'promotor', 'spg', 'spb'] },
+  { label: 'Teknik Mesin', aka: ['teknik mesin', 'mesin', 'mechanical', 'teknik pemesinan', 'tp', 'teknik pengelasan', 'mekatronika'],
+    fns: ['Teknik, Mesin', 'Maintenance', 'Manufaktur dan Produksi', 'Operator'],
+    kw: ['mesin', 'mechanical', 'mekanik', 'mechanic', 'maintenance', 'teknisi mesin', 'welder', 'welding', 'las', 'cnc', 'machinist', 'operator produksi', 'mekatronika'] },
+  { label: 'Teknik Otomotif', aka: ['otomotif', 'teknik otomotif', 'tkr', 'teknik kendaraan ringan', 'tsm', 'teknik sepeda motor', 'tbsm'],
+    fns: [],
+    kw: ['mekanik', 'mechanic', 'otomotif', 'automotive', 'bengkel', 'service advisor', 'alat berat', 'heavy equipment', 'body repair', 'spooring'] },
+  { label: 'Teknik Elektro', aka: ['teknik elektro', 'elektro', 'electrical', 'elektronika', 'teknik listrik', 'titl', 'teknik instalasi tenaga listrik', 'telekomunikasi'],
+    fns: ['Teknik, Elektro', 'Teknik, Telekomunikasi'],
+    kw: ['elektro', 'electrical', 'listrik', 'electrician', 'elektronika', 'teknisi elektronik', 'instrument', 'instrumentasi', 'telekomunikasi', 'fiber optic', 'teknisi listrik'] },
+  { label: 'Teknik Sipil & Arsitektur', aka: ['teknik sipil', 'sipil', 'civil', 'arsitektur', 'arsitek', 'desain interior', 'interior', 'dpib', 'bangunan', 'konstruksi'],
+    fns: ['Teknik, Sipil', 'Arsitek', 'Juru Gambar', 'Manajemen Proyek'],
+    kw: ['sipil', 'civil', 'drafter', 'drafting', 'arsitek', 'architect', 'surveyor', 'konstruksi', 'construction', 'site engineer', 'quantity surveyor', 'estimator', 'interior', 'pelaksana'] },
+  { label: 'Teknik Industri', aka: ['teknik industri', 'industri', 'industrial engineering', 'manajemen industri'],
+    fns: ['Penelitian dan Manajemen Kualitas', 'Quality Control (QC)', 'Manajemen Mutu (ISO)', 'Manajemen Pabrik'],
+    kw: ['ppic', 'qc', 'qa', 'quality', 'supervisor produksi', 'production', 'supply chain', 'teknik industri', 'industrial engineer', 'planner', 'inventory control'] },
+  { label: 'Kimia', aka: ['kimia', 'teknik kimia', 'kimia analis', 'analis kimia', 'chemistry', 'chemical'],
+    fns: ['Teknik, Kimia', 'Laboratorium', 'Quality Control (QC)'],
+    kw: ['kimia', 'chemical', 'chemist', 'laboratorium', 'laboratory', 'lab', 'analis lab'] },
+  { label: 'Pertambangan & Geologi', aka: ['pertambangan', 'tambang', 'teknik pertambangan', 'geologi', 'teknik geologi', 'perminyakan', 'teknik perminyakan', 'migas', 'mining'],
+    fns: ['Teknik, Perminyakan', 'Ahli Geologi'],
+    kw: ['tambang', 'mining', 'mine', 'geologi', 'geolog', 'geologist', 'migas', 'oil', 'gas', 'hse', 'k3', 'safety', 'smelter', 'nikel', 'batubara', 'coal'] },
+  { label: 'Logistik & Transportasi', aka: ['logistik', 'logistic', 'manajemen logistik', 'transportasi', 'teknik logistik', 'supply chain', 'manajemen transportasi'],
+    fns: ['Logistik', 'Operasi Gudang', 'Transportasi', 'Supir', 'Administrasi Export'],
+    kw: ['logistik', 'logistic', 'gudang', 'warehouse', 'ekspedisi', 'kurir', 'courier', 'driver', 'supir', 'sopir', 'shipping', 'export', 'import', 'inventory', 'delivery'] },
+  { label: 'Psikologi & SDM', aka: ['psikologi', 'sdm', 'manajemen sdm', 'manajemen sumber daya manusia', 'hr', 'hrd', 'human resource'],
+    fns: ['SDM', 'Penggajian dan Fasilitas'],
+    kw: ['hr', 'hrd', 'human resource', 'recruiter', 'recruitment', 'rekrutmen', 'talent', 'people', 'psikolog', 'psychologist', 'personalia', 'training'] },
+  { label: 'Hukum', aka: ['hukum', 'ilmu hukum', 'law', 'syariah', 'hukum bisnis'],
+    fns: ['Legal, Konsultasi & Advisori'],
+    kw: ['legal', 'hukum', 'lawyer', 'advokat', 'paralegal', 'notaris', 'compliance', 'kepatuhan'] },
+  { label: 'Pendidikan', aka: ['pendidikan', 'keguruan', 'fkip', 'pgsd', 'paud', 'pgpaud', 'tarbiyah', 'pendidikan guru', 'bimbingan konseling'],
+    fns: ['Edukasi', 'Guru / Tutor', 'Pelatih, Pendidik', 'Kepala Sekolah', 'Pelatih Olahraga', 'Perpustakaan dan Kurator'],
+    kw: ['guru', 'teacher', 'tutor', 'pengajar', 'mengajar', 'dosen', 'lecturer', 'instruktur', 'instructor', 'trainer', 'edukator', 'educator', 'pendidik', 'paud', 'tk'] },
+  { label: 'Bahasa & Sastra', aka: ['bahasa', 'sastra', 'sastra inggris', 'bahasa inggris', 'pendidikan bahasa inggris', 'sastra jepang', 'bahasa jepang', 'sastra mandarin', 'bahasa mandarin', 'sastra korea', 'english'],
+    fns: ['Penerjemah'],
+    kw: ['english', 'inggris', 'mandarin', 'chinese', 'japanese', 'jepang', 'korean', 'korea', 'translator', 'penerjemah', 'interpreter', 'bahasa', 'copywriter'] },
+  { label: 'Keperawatan & Kebidanan', aka: ['keperawatan', 'perawat', 'ners', 'kebidanan', 'bidan', 'nursing'],
+    fns: ['Perawat', 'Bidan', 'Asisten Teknis Kesehatan'],
+    kw: ['perawat', 'nurse', 'ners', 'bidan', 'midwife', 'klinik', 'clinic', 'caregiver', 'medis'] },
+  { label: 'Farmasi', aka: ['farmasi', 'apoteker', 'pharmacy', 'tenaga teknis kefarmasian', 'ttk', 'farmasi klinis'],
+    fns: ['Apoteker / Farmasi'],
+    kw: ['apoteker', 'farmasi', 'pharmacist', 'pharmacy', 'kefarmasian', 'ttk', 'apotek'] },
+  { label: 'Kedokteran', aka: ['kedokteran', 'dokter', 'kedokteran gigi', 'dokter gigi', 'kedokteran hewan', 'dokter hewan', 'medical'],
+    fns: ['Dokter Gigi', 'Dokter Umum', 'Dokter Spesialis', 'Dokter Hewan'],
+    kw: ['dokter', 'doctor', 'dentist', 'drg', 'dokter hewan', 'veterinarian'] },
+  { label: 'Kesehatan Masyarakat & Gizi', aka: ['kesehatan masyarakat', 'kesmas', 'gizi', 'ilmu gizi', 'analis kesehatan', 'teknologi laboratorium medis', 'radiologi', 'fisioterapi', 'k3', 'keselamatan kerja'],
+    fns: ['Laboratorium', 'Asisten Teknis Kesehatan', 'Teknik, Keselamatan'],
+    kw: ['gizi', 'nutrisi', 'nutritionist', 'ahli gizi', 'radiografer', 'radiographer', 'fisioterapis', 'physiotherapist', 'analis kesehatan', 'laboratorium', 'hse', 'k3', 'safety'] },
+  { label: 'Perhotelan & Pariwisata', aka: ['perhotelan', 'hotel', 'pariwisata', 'hospitality', 'usaha perjalanan wisata', 'upw', 'tourism'],
+    fns: ['Operasi Hotel', 'Tour & Travel', 'Operasi Restoran', 'Resepsionis'],
+    kw: ['hotel', 'front office', 'front desk', 'housekeeping', 'receptionist', 'resepsionis', 'tour', 'travel', 'guest', 'concierge', 'bellboy', 'waiter', 'waitress', 'server', 'villa', 'resort', 'spa'] },
+  { label: 'Tata Boga & Kuliner', aka: ['tata boga', 'boga', 'kuliner', 'culinary', 'perhotelan kuliner', 'pastry', 'seni kuliner', 'kulinari'],
+    fns: ['Juru Masak', 'Makanan dan Minuman', 'Operasi Restoran'],
+    kw: ['cook', 'chef', 'koki', 'kitchen', 'dapur', 'pastry', 'baker', 'bakery', 'barista', 'bartender', 'juru masak', 'commis', 'cook helper', 'butcher'] },
+  { label: 'Pertanian & Peternakan', aka: ['pertanian', 'agribisnis', 'agroteknologi', 'agronomi', 'peternakan', 'perikanan', 'kehutanan', 'teknologi pangan', 'agriculture'],
+    fns: ['Teknik, Pertanian', 'Peternakan', 'Dokter Hewan'],
+    kw: ['pertanian', 'agronomi', 'agronomist', 'agri', 'perkebunan', 'kebun', 'plantation', 'peternakan', 'farm', 'perikanan', 'kehutanan', 'sawit', 'pangan', 'food technologist'] },
+  { label: 'Administrasi Perkantoran', aka: ['administrasi perkantoran', 'administrasi', 'otkp', 'mplb', 'manajemen perkantoran', 'sekretaris', 'kesekretariatan', 'administrasi niaga', 'administrasi publik'],
+    fns: ['Administrasi & Customer Relationship', 'Sekretaris', 'Bagian Umum', 'Resepsionis', 'Layanan Pelanggan'],
+    kw: ['admin', 'administrasi', 'administration', 'sekretaris', 'secretary', 'resepsionis', 'receptionist', 'data entry', 'office', 'customer service', 'staff umum', 'general affair'] },
+  { label: 'Tata Busana & Fashion', aka: ['tata busana', 'busana', 'fashion', 'desain mode', 'tekstil'],
+    fns: ['Pembuat Pola', 'Model Fashion'],
+    kw: ['fashion', 'busana', 'jahit', 'penjahit', 'tailor', 'garment', 'pola', 'pattern', 'tekstil', 'textile'] },
+  { label: 'Pelayaran', aka: ['pelayaran', 'nautika', 'teknika', 'kepelautan', 'perkapalan', 'teknik perkapalan'],
+    fns: ['Awak Kapal Laut'],
+    kw: ['kapal', 'nautika', 'pelaut', 'seaman', 'deck', 'abk', 'vessel', 'marine', 'port captain', 'port engineer'] }
+];
+
+/** Cari jurusan dari teks ketikan pengguna (nama, singkatan, atau sebagian nama). */
+export function findMajor(text) {
+  const t = fold(text);
+  if (!t) return null;
+  const exact = MAJORS.find((m) => fold(m.label) === t || m.aka.includes(t));
+  if (exact) return exact;
+  if (t.length < 3) return null;
+  return MAJORS.find((m) => fold(m.label).startsWith(t) || m.aka.some((a) => a.startsWith(t))) || null;
+}
+
+const majorCache = new Map();
+/** Fungsi penyaring untuk satu jurusan. Teks yang bukan jurusan dikenal dicocokkan ke judul + bidang. */
+export function majorFilter(text) {
+  const t = fold(text);
+  if (!t) return null;
+  if (majorCache.has(t)) return majorCache.get(t);
+  const m = findMajor(t);
+  let fn;
+  if (m) {
+    const fns = new Set(m.fns);
+    const esc = (k) => fold(k).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(`(^|[^a-z0-9])(${m.kw.map(esc).join('|')})(?![a-z0-9])`);
+    fn = (j) => fns.has(j.fn) || re.test(j.titleFold);
+  } else {
+    const tokens = t.split(' ').filter(Boolean);
+    fn = (j) => tokens.every((tok) => j.titleFold.includes(tok) || fold(j.fn).includes(tok));
+  }
+  majorCache.set(t, fn);
+  return fn;
+}
 
 export function fold(text) {
   return String(text || '')
@@ -79,9 +203,59 @@ export function fold(text) {
     .toLowerCase().replace(/\s+/g, ' ').trim();
 }
 
-/** "Kota Jakarta Selatan" -> "Jakarta Selatan", "Kab. Badung" tetap. */
+/** "Kota Adm. Jakarta Selatan" -> "Jakarta Selatan", "Kab. Badung" tetap. */
 export function cityLabel(city) {
-  return String(city || '').replace(/^Kota\s+/i, '').replace(/^Kab\s+/i, 'Kab. ').trim();
+  return String(city || '')
+    .replace(/^Kota\s+(Adm\.?\s+|Administrasi\s+)?/i, '')
+    .replace(/^Kab(upaten)?\.?\s+(Adm\.?\s+|Administrasi\s+)?/i, 'Kab. ')
+    .trim();
+}
+
+// Tipe kerja dari sumber kadang berbahasa Inggris.
+const TYPE_NAMES = {
+  contract: 'Kontrak', internship: 'Magang', intern: 'Magang', daily: 'Harian',
+  'full-time': 'Full time', 'part-time': 'Part time'
+};
+export function typeLabel(type) {
+  const t = String(type || '').trim();
+  return TYPE_NAMES[t.toLowerCase()] || t;
+}
+
+// Gaji di bawah ini hampir pasti upah harian/per paket, bukan gaji bulanan.
+export const MIN_MONTHLY = 500000;
+
+// Singkatan yang tetap huruf besar saat judul HURUF BESAR dirapikan.
+const KEEP_UPPER = new Set(['PT', 'CV', 'UD', 'PD', 'IT', 'HR', 'HRD', 'GA', 'CS', 'SPG', 'SPB', 'SPV', 'QC', 'QA', 'DC',
+  'B2B', 'B2C', 'F&B', 'BUMN', 'BUMD', 'SMA', 'SMK', 'SMP', 'SD', 'D3', 'S1', 'S2', 'KBA', 'UI', 'UX', 'CEO', 'CFO', 'COO',
+  'CTO', 'PIC', 'SEO', 'CRM', 'ERP', 'SAP', 'K3', 'HSE', 'PPIC', 'TU', 'RS', 'RSU', 'TK', 'PAUD', 'MD', 'AR', 'AP', 'PR',
+  'KOL', 'TV', 'ATM', 'DW', 'OB', 'IOS', 'AI', 'BPR', 'BPJS', 'NPWP', 'SIM', 'ID', 'JNE', 'JNT', 'MCU', 'OTR', 'HVAC']);
+const KEEP_LOWER = new Set(['dan', 'di', 'ke', 'dari', 'untuk', 'yang', 'atau', 'and', 'of', 'the', 'for', 'in', 'at', 'with', '&']);
+
+/** "ADMIN MARKETING" -> "Admin Marketing", "PT INDOMOBIL PRIMA NIAGA" -> "PT Indomobil Prima Niaga". */
+export function tidy(text) {
+  const s = String(text || '').trim();
+  const letters = s.replace(/[^A-Za-z]/g, '');
+  if (letters.length < 4) return s;
+  if ((s.match(/[A-Z]/g) || []).length < letters.length * 0.8) {
+    // Judul campuran ("System Analyst REGULATORY REPORTING"): rapikan kata HURUF BESAR yang panjang saja.
+    return s.replace(/\b[A-Z]{5,}\b/g, (w) => (KEEP_UPPER.has(w) ? w : w[0] + w.slice(1).toLowerCase()));
+  }
+  const fix = (part, isFirst) => {
+    const bare = part.replace(/^[("'[]+|[)"'\],.:;!]+$/g, '');
+    if (!bare) return part;
+    const up = bare.toUpperCase();
+    if (up === 'TBK') return part.replace(/TBK/i, 'Tbk');
+    if (KEEP_UPPER.has(up) || /\d/.test(bare)) return part;
+    if (!isFirst && KEEP_LOWER.has(bare.toLowerCase())) return part.toLowerCase();
+    return part.toLowerCase().replace(/[a-zÀ-ɏ]/, (c) => c.toUpperCase());
+  };
+  let first = true;
+  return s.split(/(\s+)/).map((word) => {
+    if (/^\s+$/.test(word)) return word;
+    const out = word.split(/([/-])/).map((seg, i) => (/^[/-]$/.test(seg) ? seg : fix(seg, first && i === 0))).join('');
+    first = false;
+    return out;
+  }).join('');
 }
 
 /** Baca jobs.json (format ringkas dari update.py) menjadi daftar objek. */
@@ -100,18 +274,18 @@ export function decode(data) {
     const companyIdx = row[at('company')];
     const job = {
       id: row[at('id')],
-      title: row[at('title')],
-      company: pick(row, 'company'),
+      title: tidy(row[at('title')]),
+      company: tidy(pick(row, 'company')),
       logo: (lists.logo || [])[companyIdx] || '',
       city: pick(row, 'city'),
       province: pick(row, 'province'),
       platform: pick(row, 'platform'),
       fn: pick(row, 'function'),
       industry: pick(row, 'industry'),
-      type: pick(row, 'type'),
+      type: typeLabel(pick(row, 'type')),
       edu: pick(row, 'edu'),
-      smin: row[at('smin')] || 0,
-      smax: row[at('smax')] || 0,
+      smin: monthly(row[at('smin')]),
+      smax: monthly(row[at('smax')]),
       posted: row[at('posted')] || 0,
       expires: row[at('expires')] || 0,
       first: row[at('first')] || 0,
@@ -119,10 +293,15 @@ export function decode(data) {
     };
     job.eduLevel = job.edu in EDU_LEVEL ? EDU_LEVEL[job.edu] : -1;
     job.pay = salaryMid(job);
+    job.titleFold = fold(job.title);
     job.hay = fold([job.title, job.company, cityLabel(job.city), job.province, job.fn, job.industry, job.platform].join(' '));
     return job;
   });
   return { jobs, updated: data.updated || null, sources: data.sources || [], logoBase: data.logoBase || '' };
+}
+
+function monthly(n) {
+  return n >= MIN_MONTHLY ? n : 0;
 }
 
 export function salaryMid(job) {
@@ -138,7 +317,9 @@ export function filterJobs(jobs, f, ref, skip = '') {
   const waktu = WAKTU_CHOICES.find((c) => c.key === f.waktu);
   const since = waktu && waktu.days ? ref - waktu.days * HARI : 0;
   const types = new Set(f.types || []);
+  const jur = f.jur ? majorFilter(f.jur) : null;
   return jobs.filter((j) => {
+    if (skip !== 'jur' && jur && !jur(j)) return false;
     if (skip !== 'prov' && f.prov && j.province !== f.prov) return false;
     if (skip !== 'city' && skip !== 'prov' && f.city && j.city !== f.city) return false;
     if (skip !== 'fn' && f.fn && j.fn !== f.fn) return false;
@@ -292,7 +473,7 @@ export function htmlToText(html) {
 
 // ---------- Filter <-> URL ----------
 
-const KEYS = ['q', 'prov', 'city', 'fn', 'edu', 'gaji', 'waktu', 'src', 'sort'];
+const KEYS = ['q', 'jur', 'prov', 'city', 'fn', 'edu', 'gaji', 'waktu', 'src', 'sort'];
 
 export function filtersFromQuery(search) {
   const p = new URLSearchParams(search);
@@ -312,7 +493,7 @@ export function filtersToQuery(f) {
 
 export function activeCount(f) {
   let n = 0;
-  for (const k of ['prov', 'city', 'fn', 'edu', 'gaji', 'waktu', 'src']) if (f[k]) n += 1;
+  for (const k of ['jur', 'prov', 'city', 'fn', 'edu', 'gaji', 'waktu', 'src']) if (f[k]) n += 1;
   return n + (f.types || []).length;
 }
 

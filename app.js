@@ -1,11 +1,43 @@
-// Loker Radar: tampilan. Data dibaca dari jobs.json (ditulis update.py lewat GitHub Actions setiap pagi).
+// Tracking Loker: tampilan. Data dibaca dari jobs.json (ditulis update.py lewat GitHub Actions setiap pagi).
 import {
   decode, filterJobs, sortJobs, countBy, salaryBy, summarize, salaryText, juta, ribu, ago, dateText, timeText,
   karirhubUrl, initials, hue, htmlToText, filtersFromQuery, filtersToQuery, activeCount, cityLabel,
-  EMPTY_FILTERS, EDU_CHOICES, EDU_SHORT, EDU_LEVEL, GAJI_CHOICES, WAKTU_CHOICES, SORTS, DIRECT, KARIRHUB_DETAIL_API
+  EMPTY_FILTERS, MAJORS, findMajor, EDU_CHOICES, EDU_SHORT, EDU_LEVEL, GAJI_CHOICES, WAKTU_CHOICES, SORTS, DIRECT, KARIRHUB_DETAIL_API
 } from './logic.js';
 
 const PAGE = 30;
+
+// Pesan semangat untuk teman-teman yang masih mencari kerja. Berganti setiap hari.
+const MESSAGES = [
+  { bubble: 'Semangat, ya!', title: 'Istirahat boleh, menyerah jangan.', body: 'Kalau lagi capek, ambil jeda sebentar. Lowongan baru tetap masuk setiap pagi, dan Tracking Loker akan terus mengumpulkannya untukmu.' },
+  { bubble: 'Satu lamaran lagi!', title: 'Lamaran yang belum berhasil tetap ada gunanya.', body: 'Setiap lamaran yang kamu kirim bikin kamu makin paham apa yang dicari perusahaan. Bisa jadi yang berikutnya justru yang berhasil.' },
+  { bubble: 'Kamu pasti bisa!', title: 'Pelan-pelan, asal tetap jalan.', body: 'Tiga lamaran yang disesuaikan dengan posisinya sering lebih ampuh daripada puluhan lamaran yang dikirim sekaligus.' },
+  { bubble: 'Hari baru, peluang baru', title: 'Hari ini ada {fresh} peluang baru.', body: 'Pilih yang paling cocok dengan kemampuanmu, rapikan CV sebentar, lalu kirim dengan percaya diri.' },
+  { bubble: 'Coba lagi, yuk!', title: 'Coba lirik bidang yang masih serumpun.', body: 'Kalau bidang incaranmu sedang sepi, cek halaman Pasar. Pengalaman di bidang yang dekat bisa jadi batu loncatan.' },
+  { bubble: 'Kamu hebat!', title: 'Terima kasih sudah terus mencoba.', body: 'Mencari kerja memang melelahkan. Kamu masih berusaha sampai hari ini, dan itu patut dihargai.' },
+  { bubble: 'Ayo, mulai hari ini!', title: 'Melamar lebih awal, peluangnya lebih besar.', body: 'Banyak perekrut membaca lamaran yang masuk di hari-hari pertama. Cek lowongan bertanda "Baru" setiap pagi.' }
+];
+
+// Jurusan yang tampil sebagai pintasan di bawah kolom pencarian.
+const POPULAR_MAJORS = ['Akuntansi', 'Manajemen', 'Teknik Informatika', 'Administrasi Perkantoran', 'Desain Komunikasi Visual',
+  'Teknik Mesin', 'Teknik Sipil & Arsitektur', 'Keperawatan & Kebidanan', 'Tata Boga & Kuliner', 'Pendidikan', 'Hukum'];
+
+const MOODS = [
+  { tone: 'blue', title: 'Lulusan SMA/SMK', unit: 'lowongan', icon: 'star', img: 'orang-raka.svg', patch: { edu: 'sma' } },
+  { tone: 'green', title: 'Mau magang dulu', unit: 'magang', icon: 'cap', img: 'orang-nadia.svg', patch: { types: ['Magang'] } },
+  { tone: 'pink', title: 'Baru masuk hari ini', unit: 'dalam 24 jam', icon: 'bolt', img: 'orang-ayu.svg', patch: { waktu: '1' } },
+  { tone: 'yellow', title: 'Gaji di atas 5 juta', unit: 'lowongan', icon: 'coin', img: 'orang-laila.svg', patch: { gaji: '5' } }
+];
+
+function todayMessage() {
+  const day = Math.floor((state.ref + 7 * 3600) / 86400);
+  return MESSAGES[day % MESSAGES.length];
+}
+
+function emptyArt(img, tone = '') {
+  return `<div class="empty-art ${tone}"><img src="${img}" alt=""></div>`;
+}
+// Kunci lama dipertahankan supaya lowongan yang sudah disimpan pengguna tidak hilang.
 const SAVED_KEY = 'loker-radar:saved';
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -62,6 +94,8 @@ async function boot() {
     return;
   }
   renderMeta();
+  renderMoods();
+  renderCheer();
   apply(false);
   const id = new URLSearchParams(location.search).get('id');
   if (id) openJob(id);
@@ -156,22 +190,16 @@ function renderControls() {
   badge.hidden = !n;
   badge.textContent = n;
 
-  // Pintasan cepat di bawah pencarian.
-  const quick = [
-    { label: 'Baru 24 jam', on: f.waktu === '1', act: { waktu: f.waktu === '1' ? '' : '1' } },
-    { label: 'Gaji dicantumkan', on: f.gaji === 'ada', act: { gaji: f.gaji === 'ada' ? '' : 'ada' } },
-    { label: 'Gaji ≥ 5 jt', on: f.gaji === '5', act: { gaji: f.gaji === '5' ? '' : '5' } },
-    { label: 'Lulusan SMA/SMK', on: f.edu === 'sma', act: { edu: f.edu === 'sma' ? '' : 'sma' } }
-  ];
-  if (all.some((j) => j.type === 'Magang')) {
-    const on = f.types.length === 1 && f.types[0] === 'Magang';
-    quick.push({ label: 'Magang', on, act: { types: on ? [] : ['Magang'] } });
-  }
-  if (all.some((j) => j.via !== 'karirhub')) {
-    quick.push({ label: 'Langsung dari perusahaan', on: f.src === DIRECT, act: { src: f.src === DIRECT ? '' : DIRECT } });
-  }
-  $('#quick').innerHTML = quick.map((q, i) => `<button type="button" class="chip${q.on ? ' on' : ''}" data-quick="${i}">${q.label}</button>`).join('');
-  $('#quick')._acts = quick.map((q) => q.act);
+  // Pintasan jurusan di bawah kolom pencarian (jumlahnya mengikuti filter lain yang aktif).
+  const active = findMajor(f.jur);
+  const base = filterJobs(all, f, ref, 'jur');
+  const chips = POPULAR_MAJORS.map((label) => {
+    const n = filterJobs(base, { ...EMPTY_FILTERS, types: [], jur: label }, ref).length;
+    const on = active && active.label === label;
+    return `<button type="button" class="chip${on ? ' on' : ''}" data-jur="${esc(on ? '' : label)}">${esc(label)} <small>${ribu(n)}</small></button>`;
+  });
+  $('#quick').innerHTML = `<span class="quick-label">Cari sesuai jurusan</span>${chips.join('')}`;
+  if (document.activeElement !== $('#jur')) $('#jur').value = f.jur;
 
   renderActiveChips();
 }
@@ -181,6 +209,7 @@ function renderActiveChips() {
   const chips = [];
   const add = (label, patch) => chips.push({ label, patch });
   if (f.q) add(`“${f.q}”`, { q: '' });
+  if (f.jur) add(`Jurusan: ${findMajor(f.jur)?.label || f.jur}`, { jur: '' });
   if (f.prov) add(f.prov, { prov: '', city: '' });
   if (f.city) add(cityLabel(f.city), { city: '' });
   if (f.fn) add(f.fn, { fn: '' });
@@ -199,13 +228,47 @@ function renderHero() {
   const s = summarize(state.all, state.ref);
   if (!state.loaded) return;
   if (!state.all.length) {
-    const h1 = $('#hero-count')?.closest('h1');
-    if (h1) h1.innerHTML = 'Radar sedang menyiapkan <span>data lowongan</span>';
+    $('#hero-title').innerHTML = 'Tracking Loker sedang menyiapkan <mark>data lowongan</mark> untukmu.';
     $('#hero-sub').textContent = 'Lowongan dari Karirhub Kemnaker dan situs karier perusahaan ditarik otomatis setiap pagi pukul 06.00 WIB.';
     return;
   }
   $('#hero-count').textContent = ribu(s.total);
-  $('#hero-sub').innerHTML = `dari <b>${ribu(s.companies)}</b> perusahaan di ${s.provinces} provinsi. <b>${ribu(s.fresh)}</b> diposting dalam 24 jam terakhir.`;
+  $('#hero-sub').innerHTML = `Dari <b>${ribu(s.companies)}</b> perusahaan di ${s.provinces} provinsi, <b>${ribu(s.fresh)}</b> di antaranya baru masuk dalam 24 jam terakhir. Pekerjaan berikutnya mungkin ada di daftar hari ini.`;
+}
+
+function renderMoods() {
+  if (!state.loaded || !state.all.length) {
+    $('#moods').hidden = true;
+    return;
+  }
+  $('#moods').hidden = false;
+  $('#moods').innerHTML = MOODS.map((m) => {
+    const n = filterJobs(state.all, { ...EMPTY_FILTERS, types: [], ...m.patch }, state.ref).length;
+    return `<button type="button" class="mood ${m.tone}" data-mood='${esc(JSON.stringify(m.patch))}'>
+      <span class="mood-title">${m.title}</span>
+      <span class="mood-chip">${ribu(n)} ${m.unit}</span>
+      <svg class="mood-icon"><use href="#i-${m.icon}"/></svg>
+      <img src="${m.img}" alt="" loading="lazy">
+    </button>`;
+  }).join('');
+}
+
+function renderCheer() {
+  const m = todayMessage();
+  $('#hero-bubble').textContent = m.bubble;
+  if (!state.loaded || !state.all.length) {
+    $('#cheer').innerHTML = '';
+    return;
+  }
+  const fresh = summarize(state.all, state.ref).fresh;
+  $('#cheer').innerHTML = `
+    <div class="cheer-art"><img src="orang-bima.svg" alt=""></div>
+    <div>
+      <p class="cheer-eyebrow"><svg><use href="#i-heart"/></svg>Pesan hari ini untuk yang masih berjuang</p>
+      <h2>${esc(m.title)}</h2>
+      <p>${esc(m.body.replace('{fresh}', ribu(fresh)))}</p>
+    </div>
+    <button type="button" class="btn cta" data-mood='{"waktu":"1"}'>Lihat ${ribu(fresh)} lowongan baru <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button>`;
 }
 
 function logoHTML(job, cls = '') {
@@ -253,16 +316,17 @@ function renderResults() {
   const listEl = $('#job-list');
   $('#result-count').textContent = state.all.length ? `${ribu(list.length)} lowongan` : 'Belum ada data';
   const n = activeCount(state.f) + (state.f.q ? 1 : 0);
-  $('#result-note').textContent = !state.all.length ? '' : n
-    ? `dari ${ribu(state.all.length)} lowongan aktif`
-    : 'Semua lowongan aktif, terbaru di atas';
+  const major = findMajor(state.f.jur);
+  $('#result-note').textContent = !state.all.length ? '' : state.f.jur
+    ? `dari ${ribu(state.all.length)} lowongan aktif · ${major ? `cocok untuk jurusan ${major.label}, dilihat dari bidang dan judul lowongan` : `bidang atau judulnya memuat "${state.f.jur}"`}`
+    : n ? `dari ${ribu(state.all.length)} lowongan aktif` : 'Semua lowongan aktif, terbaru di atas';
   if (!state.all.length) {
-    listEl.innerHTML = `<div class="empty"><div class="radar-art"><i></i></div><b>Data pertama sedang disiapkan</b><p>Lowongan dari Karirhub Kemnaker dan situs karier perusahaan ditarik otomatis setiap pagi pukul 06.00 WIB.</p></div>`;
+    listEl.innerHTML = `<div class="empty">${emptyArt('orang-sari.svg', 'yellow')}<b>Data pertama sedang disiapkan</b><p>Lowongan dari Karirhub Kemnaker dan situs karier perusahaan ditarik otomatis setiap pagi pukul 06.00 WIB.</p></div>`;
     $('#more').hidden = true;
     return;
   }
   if (!list.length) {
-    listEl.innerHTML = `<div class="empty"><b>Tidak ada lowongan yang cocok</b><p>Coba kata kunci lain atau longgarkan filter.</p><button class="btn dark" type="button" data-reset>Hapus semua filter</button></div>`;
+    listEl.innerHTML = `<div class="empty">${emptyArt('orang-nadia.svg')}<b>Belum ketemu yang cocok</b><p>Coba kata kunci lain atau longgarkan filternya. Lowongan baru masuk setiap pagi, jadi besok bisa saja muncul.</p><button class="btn cta" type="button" data-reset>Hapus semua filter <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button></div>`;
     $('#more').hidden = true;
     return;
   }
@@ -307,7 +371,7 @@ function renderPasar() {
   const bento = $('#bento');
   if (!state.all.length) {
     $('#pasar-scope').textContent = '';
-    bento.innerHTML = `<div class="tile wide"><div class="empty" style="box-shadow:none;padding:24px"><div class="radar-art"><i></i></div><b>Analisis muncul setelah data pertama masuk</b></div></div>`;
+    bento.innerHTML = `<div class="tile wide"><div class="empty" style="box-shadow:none;padding:24px">${emptyArt('orang-sari.svg', 'yellow')}<b>Analisis muncul setelah data pertama masuk</b></div></div>`;
     return;
   }
   const s = summarize(list, state.ref);
@@ -331,21 +395,21 @@ function renderPasar() {
   const srcs = countBy(list, 'platform', 8).map(([v, n]) => [v, n, { ...base, src: v }]);
 
   bento.innerHTML = `
-    <div class="tile kpi dark"><span class="kpi-label">Lowongan aktif</span><span class="kpi-value">${ribu(s.total)}</span><span class="kpi-delta tile-sub">${scopeProv ? `${pct(s.total, state.all.length)} dari seluruh Indonesia` : deltaText}</span></div>
-    <div class="tile kpi"><span class="kpi-label">Diposting 24 jam terakhir</span><span class="kpi-value">${ribu(s.fresh)}</span><span class="tile-sub">${pct(s.fresh, s.total)} dari lowongan aktif</span></div>
-    <div class="tile kpi lime"><span class="kpi-label">Perusahaan merekrut</span><span class="kpi-value">${ribu(s.companies)}</span><span class="tile-sub">rata-rata ${(s.total / Math.max(1, s.companies)).toFixed(1).replace('.', ',')} lowongan per perusahaan</span></div>
-    <div class="tile kpi"><span class="kpi-label">Median gaji tercantum</span><span class="kpi-value">${s.medianPay ? `<small>Rp</small>${juta(s.medianPay).replace(' jt', '<small> jt</small>')}` : '–'}</span><span class="tile-sub">hanya ${s.salariedPct}% lowongan mencantumkan gaji</span></div>
+    <div class="tile kpi navy"><span class="kpi-label">Lowongan aktif</span><span class="kpi-value">${ribu(s.total)}</span><span class="kpi-delta tile-sub">${scopeProv ? `${pct(s.total, state.all.length)} dari seluruh Indonesia` : deltaText}</span></div>
+    <div class="tile kpi yellow"><span class="kpi-label">Diposting 24 jam terakhir</span><span class="kpi-value">${ribu(s.fresh)}</span><span class="tile-sub">${pct(s.fresh, s.total)} dari lowongan aktif</span></div>
+    <div class="tile kpi green"><span class="kpi-label">Perusahaan merekrut</span><span class="kpi-value">${ribu(s.companies)}</span><span class="tile-sub">rata-rata ${(s.total / Math.max(1, s.companies)).toFixed(1).replace('.', ',')} lowongan per perusahaan</span></div>
+    <div class="tile kpi pink"><span class="kpi-label">Median gaji tercantum</span><span class="kpi-value">${s.medianPay ? `<small>Rp</small>${juta(s.medianPay).replace(' jt', '<small> jt</small>')}` : '–'}</span><span class="tile-sub">hanya ${s.salariedPct}% lowongan mencantumkan gaji</span></div>
 
     <div class="tile wide trend"><div class="tile-head"><span class="tile-title">Lowongan aktif dari hari ke hari</span><span class="tile-sub">Seluruh Indonesia · garis = aktif, batang = baru terdeteksi</span></div><div id="trend"></div></div>
 
-    <div class="tile"><div class="tile-head"><span class="tile-title">${scopeProv ? 'Kota/kabupaten terbanyak' : 'Provinsi terbanyak'}</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(where)}</div>
-    <div class="tile"><div class="tile-head"><span class="tile-title">Bidang paling dicari</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(fns)}</div>
+    <div class="tile" data-tone="blue"><div class="tile-head"><span class="tile-title">${scopeProv ? 'Kota/kabupaten terbanyak' : 'Provinsi terbanyak'}</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(where)}</div>
+    <div class="tile" data-tone="green"><div class="tile-head"><span class="tile-title">Bidang paling dicari</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(fns)}</div>
     <div class="tile"><div class="tile-head"><span class="tile-title">Paling aktif merekrut</span><span class="tile-sub">lowongan terbuka</span></div>
       <div class="co-list">${cos.map(([name, n]) => {
         const job = list.find((j) => j.company === name);
         return `<button type="button" class="co-row" data-patch='${esc(JSON.stringify({ ...base, q: name }))}'>${logoHTML(job)}<span>${esc(name)}</span><b>${ribu(n)}</b></button>`;
       }).join('')}</div></div>
-    <div class="tile"><div class="tile-head"><span class="tile-title">Median gaji per bidang</span><span class="tile-sub">dari lowongan yang mencantumkan gaji</span></div>
+    <div class="tile" data-tone="pink"><div class="tile-head"><span class="tile-title">Median gaji per bidang</span><span class="tile-sub">dari lowongan yang mencantumkan gaji</span></div>
       ${pay.length ? barsHTML(pay.map((p) => [p.name, p.median, { ...base, fn: p.name, gaji: 'ada' }, `Rp${juta(p.median)}`, `${ribu(p.n)} data`])) : '<p class="note">Belum cukup lowongan bergaji untuk dihitung.</p>'}</div>
 
     <div class="tile"><div class="tile-head"><span class="tile-title">Siapa yang dicari</span><span class="tile-sub">porsi dari lowongan aktif</span></div>
@@ -353,7 +417,7 @@ function renderPasar() {
         <div class="mix-block"><h4>Syarat pendidikan minimal</h4>${stackHTML(edu, list.length, 'edu')}</div>
         <div class="mix-block"><h4>Tipe pekerjaan</h4>${stackHTML(types, list.length, 'type')}</div>
       </div></div>
-    <div class="tile"><div class="tile-head"><span class="tile-title">Sumber lowongan</span><span class="tile-sub">platform asal di Karirhub</span></div>${barsHTML(srcs)}</div>
+    <div class="tile" data-tone="orange"><div class="tile-head"><span class="tile-title">Sumber lowongan</span><span class="tile-sub">platform asal di Karirhub</span></div>${barsHTML(srcs)}</div>
   `;
   bento._edu = edu;
   renderTrend();
@@ -380,7 +444,7 @@ function barsHTML(rows) {
     </button>`).join('')}</div>`;
 }
 
-const STACK_COLORS = ['#15110E', '#BFE24A', '#8C8580', '#D4CFC9', '#E8C48C', '#B9CFE0', '#EFEFEC'];
+const STACK_COLORS = ['#1E2257', '#FFC83D', '#2E9E62', '#F27BA0', '#5B8DEF', '#F28C4E', '#E8DCCD'];
 
 function stackHTML(rows, total, kind) {
   if (!rows.length) return '<p class="note">Belum ada data.</p>';
@@ -394,7 +458,7 @@ function renderTrend() {
   if (!box) return;
   const days = state.days.filter((d) => d.active);
   if (days.length < 2) {
-    box.innerHTML = `<div class="trend-empty">Grafik tren muncul setelah data terkumpul minimal 2 hari.<br>Hari ini: ${ribu(days[0]?.active || state.all.length)} lowongan aktif.</div>`;
+    box.innerHTML = `<div class="trend-empty">${emptyArt('orang-dimas.svg', 'blue')}<div><b>Grafik tren sedang tumbuh</b>Garisnya muncul setelah data terkumpul minimal 2 hari. Hari ini tercatat ${ribu(days[0]?.active || state.all.length)} lowongan aktif.</div></div>`;
     return;
   }
   const W = Math.max(280, box.clientWidth);
@@ -413,20 +477,20 @@ function renderTrend() {
   const area = `${line}L${x(days.length - 1).toFixed(1)},${H - pad.b}L${x(0).toFixed(1)},${H - pad.b}Z`;
   const bars = days.map((d, i) => {
     const h = ((d.new || 0) / maxNew) * (H - pad.t - pad.b) * 0.35;
-    return `<rect x="${(x(i) - barW / 2).toFixed(1)}" y="${(H - pad.b - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="#D4F36B"/>`;
+    return `<rect x="${(x(i) - barW / 2).toFixed(1)}" y="${(H - pad.b - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="#FFC83D"/>`;
   }).join('');
   const hits = days.map((d, i) => `<rect x="${(x(i) - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" fill="transparent"><title>${d.d.split('-').reverse().join('-')}: ${ribu(d.active)} aktif${d.new != null ? `, ${ribu(d.new)} baru, ${ribu(d.closed)} ditutup` : ''}</title></rect>`).join('');
   const lastI = days.length - 1;
   const fmt = (d) => { const [, m, dd] = d.split('-'); return `${+dd} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][+m - 1]}`; };
   box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Grafik lowongan aktif per hari">
-    <defs><linearGradient id="g-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#15110E" stop-opacity=".12"/><stop offset="1" stop-color="#15110E" stop-opacity="0"/></linearGradient></defs>
+    <defs><linearGradient id="g-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E2257" stop-opacity=".12"/><stop offset="1" stop-color="#1E2257" stop-opacity="0"/></linearGradient></defs>
     ${bars}
     <path d="${area}" fill="url(#g-area)" stroke="none"/>
-    <path d="${line}" fill="none" stroke="#15110E" stroke-width="2.2"/>
-    <circle cx="${x(lastI)}" cy="${y(vals[lastI])}" r="5" fill="#15110E" stroke="#fff" stroke-width="2.5"/>
+    <path d="${line}" fill="none" stroke="#1E2257" stroke-width="2.2"/>
+    <circle cx="${x(lastI)}" cy="${y(vals[lastI])}" r="5" fill="#1E2257" stroke="#fff" stroke-width="2.5"/>
     <text class="axis" x="${pad.l}" y="${H - 6}">${fmt(days[0].d)}</text>
     <text class="axis" x="${W - pad.r}" y="${H - 6}" text-anchor="end">${fmt(days[lastI].d)}</text>
-    <text class="axis" x="${x(lastI) - 10}" y="${vals[lastI - 1] > vals[lastI] ? y(vals[lastI]) + 20 : Math.max(12, y(vals[lastI]) - 12)}" text-anchor="end" style="fill:#15110E;font-weight:600">${ribu(vals[lastI])}</text>
+    <text class="axis" x="${x(lastI) - 10}" y="${vals[lastI - 1] > vals[lastI] ? y(vals[lastI]) + 20 : Math.max(12, y(vals[lastI]) - 12)}" text-anchor="end" style="fill:#1E2257;font-weight:600">${ribu(vals[lastI])}</text>
     ${hits}
   </svg>`;
 }
@@ -472,7 +536,7 @@ function updateSavedBadge() {
 function renderSaved() {
   const box = $('#saved-list');
   if (!state.saved.length) {
-    box.innerHTML = `<div class="empty"><b>Belum ada lowongan disimpan</b><p>Ketuk ikon penanda di kartu lowongan untuk menyimpannya di sini. Simpanan hanya ada di perangkat ini.</p><a class="btn dark" href="#cari">Cari lowongan</a></div>`;
+    box.innerHTML = `<div class="empty">${emptyArt('orang-putri.svg', 'blue')}<b>Belum ada lowongan incaran</b><p>Ketuk ikon penanda di kartu lowongan untuk menyimpannya di sini, supaya tidak lupa dilamar. Simpanan hanya ada di perangkat ini.</p><a class="btn cta" href="#cari">Cari lowongan <span class="cta-dot"><svg><use href="#i-play"/></svg></span></a></div>`;
     return;
   }
   box.innerHTML = state.saved.map((s) => {
@@ -522,15 +586,16 @@ function openJob(id) {
     <div class="d-pay${pay ? '' : ' none'}"><b>${pay || 'Gaji tidak dicantumkan'}</b>${pay ? '<span>per bulan</span>' : ''}</div>
     <div class="facts">${facts.map(([k, v]) => `<div class="fact"><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
     <div class="d-section" id="d-detail">${job.via === 'karirhub' ? '<div class="d-load"></div>' : `<p class="d-text">Deskripsi lengkap dan formulir lamaran ada di situs karier ${esc(job.company)}.</p>`}</div>
+    ${closed ? '' : `<div class="cheer-note">${icon('heart')}<span>Semoga lolos! Baca lagi kualifikasinya dan sesuaikan CV-mu sebelum melamar.</span></div>`}
     <div class="warn-box">Lowongan resmi tidak memungut biaya apa pun. Waspadai permintaan transfer uang, biaya pelatihan, atau seragam.</div>
     <div class="d-actions">
-      <a class="btn dark" id="apply-link" href="${esc(kh || '#')}" target="_blank" rel="noopener">Lamar di ${esc(job.via === 'karirhub' ? 'Karirhub' : job.platform)} ${icon('arrow')}</a>
+      <a class="btn cta" id="apply-link" href="${esc(kh || '#')}" target="_blank" rel="noopener">Lamar di ${esc(job.via === 'karirhub' ? 'Karirhub' : job.platform)} <span class="cta-dot">${icon('arrow')}</span></a>
       <a class="btn outline" id="kh-link" href="${esc(kh)}" target="_blank" rel="noopener" hidden>Lihat di Karirhub</a>
     </div>`;
   $('#drawer').hidden = false;
   $('#scrim').hidden = false;
   document.body.classList.add('lock');
-  $('#drawer [data-close]').focus({ preventScroll: true });
+  $('#drawer').focus({ preventScroll: true });
 
   applyLink(job);
   if (job.via === 'karirhub') loadDetail(job);
@@ -551,7 +616,7 @@ function setApply(job, url) {
   if (!a || !url) return;
   a.href = url;
   const host = job.via === 'karirhub' ? job.platform : job.company;
-  a.innerHTML = `Lamar di ${esc(host)} ${icon('arrow')}`;
+  a.innerHTML = `Lamar di ${esc(host)} <span class="cta-dot">${icon('arrow')}</span>`;
   const kh = $('#kh-link');
   if (kh && kh.getAttribute('href')) kh.hidden = false;
 }
@@ -657,6 +722,7 @@ function openFilters(open) {
 
 function bindEvents() {
   let typing;
+  let typingJur;
   $('#q').addEventListener('input', (e) => {
     clearTimeout(typing);
     typing = setTimeout(() => setFilters({ q: e.target.value.trim() }, false), 160);
@@ -665,7 +731,8 @@ function bindEvents() {
     e.preventDefault();
     clearTimeout(typing);
     $('#q').blur();
-    setFilters({ q: $('#q').value.trim() });
+    clearTimeout(typingJur);
+    setFilters({ q: $('#q').value.trim(), jur: $('#jur').value.trim() });
   });
   $('#prov-top').addEventListener('change', (e) => setFilters({ prov: e.target.value }, false));
   $('#f-prov').addEventListener('change', (e) => setFilters({ prov: e.target.value }, false));
@@ -675,7 +742,15 @@ function bindEvents() {
   $('#sort').addEventListener('change', (e) => setFilters({ sort: e.target.value }, false));
   $('#pasar-prov').addEventListener('change', (e) => { state.pasarProv = e.target.value; renderPasar(); });
   $('#more').addEventListener('click', showMore);
-  $('#reset').addEventListener('click', () => { state.f = { ...EMPTY_FILTERS, types: [], q: state.f.q, sort: state.f.sort }; apply(false); });
+  $('#reset').addEventListener('click', () => { state.f = { ...EMPTY_FILTERS, types: [], q: state.f.q, jur: state.f.jur, sort: state.f.sort }; apply(false); });
+  $('#majors').innerHTML = MAJORS.map((m) => `<option value="${esc(m.label)}"></option>`).join('');
+  $('#jur').addEventListener('input', (e) => {
+    clearTimeout(typingJur);
+    const v = e.target.value.trim();
+    // Pilihan dari daftar langsung dipakai; ketikan bebas ditunggu sebentar.
+    const picked = MAJORS.some((m) => m.label === v);
+    typingJur = setTimeout(() => setFilters({ jur: v }, false), picked ? 0 : 350);
+  });
   $('#open-filters').addEventListener('click', () => openFilters(true));
   window.addEventListener('hashchange', () => setView(viewFromHash()));
 
@@ -707,11 +782,18 @@ function bindEvents() {
       }
       return;
     }
-    const quick = t.closest('[data-quick]');
-    if (quick) { setFilters($('#quick')._acts[+quick.dataset.quick], false); return; }
+    const jurChip = t.closest('[data-jur]');
+    if (jurChip) { setFilters({ jur: jurChip.dataset.jur }, false); return; }
     const unset = t.closest('[data-unset]');
     if (unset) { setFilters($('#active-chips')._patches[+unset.dataset.unset], false); return; }
     if (t.closest('[data-reset]')) { state.f = { ...EMPTY_FILTERS, types: [] }; apply(false); return; }
+    const mood = t.closest('[data-mood]');
+    if (mood) {
+      state.f = { ...EMPTY_FILTERS, types: [], q: state.f.q, jur: state.f.jur, prov: state.f.prov, city: state.f.city, ...JSON.parse(mood.dataset.mood) };
+      apply(false);
+      window.scrollTo({ top: $('.layout').getBoundingClientRect().top + window.scrollY - 12, behavior: 'smooth' });
+      return;
+    }
     const patch = t.closest('[data-patch]');
     if (patch) {
       state.f = { ...EMPTY_FILTERS, types: [], ...JSON.parse(patch.dataset.patch) };

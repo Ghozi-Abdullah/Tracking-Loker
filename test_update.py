@@ -47,7 +47,8 @@ def vacancy(i, **kw):
 class FakeApi:
     """Meniru endpoint Laravel berhalaman: data + meta.last_page + meta.total."""
 
-    def __init__(self, vacancies, max_limit=100, fail=None, boards=None):
+    def __init__(self, vacancies, max_limit=100, fail=None, boards=None, details=None):
+        self.details = details or {}
         self.vacancies = vacancies
         self.max_limit = max_limit
         self.fail = fail or set()
@@ -80,6 +81,8 @@ class FakeApi:
             return {"data": [{"id": EDU_SMA, "name": "SMA atau Sederajat", "level": 30}]}
         if url == update.LISTING:
             return self.page(self.vacancies, params)
+        if url.startswith(update.LISTING + "/"):
+            return {"data": self.details.get(url.rsplit("/", 1)[1], {})}
         for slug, jobs in self.boards.items():
             if url.endswith(f"/boards/{slug}/jobs"):
                 return {"jobs": jobs, "meta": {"total": len(jobs)}}
@@ -148,6 +151,9 @@ class TestNormalisasi(Base):
         self.assertEqual(update.salary({"show_salary": False, "min_salary_amount": 5e6}), (0, 0))
         self.assertEqual(update.salary({"min_salary_amount": 0, "max_salary_amount": 0}), (0, 0))
         self.assertEqual(update.salary({"min_salary_amount": 5, "max_salary_amount": 7}), (0, 0))
+        # Upah harian/per paket (Rp100 rb, Rp132 rb) bukan gaji bulanan.
+        self.assertEqual(update.salary({"min_salary_amount": 104000, "max_salary_amount": 300000}), (0, 0))
+        self.assertEqual(update.salary({"min_salary_amount": 300000, "max_salary_amount": 4500000}), (0, 4500000))
         self.assertEqual(update.salary({"min_salary": {"amount": 8e6}, "max_salary": {"amount": 5e6}}), (5000000, 8000000))
         self.assertEqual(update.salary({"min_salary_amount": 1000, "max_salary_amount": 2000, "min_salary_currency": "USD"}), (0, 0))
 
@@ -156,6 +162,31 @@ class TestNormalisasi(Base):
         self.assertEqual((job["city"], job["province"]), ("", "DKI Jakarta"))
         job = update.from_karirhub(vacancy(3, locations=[], city_name="Kota Medan"), self.refs)
         self.assertEqual((job["city"], job["province"]), ("Kota Medan", ""))
+
+    def test_tipe_kerja_bahasa_indonesia(self):
+        self.assertEqual(update.from_karirhub(vacancy(1, job_type_name="Contract"), self.refs)["type"], "Kontrak")
+        self.assertEqual(update.from_karirhub(vacancy(1, job_type_name="Internship"), self.refs)["type"], "Magang")
+        self.assertEqual(update.from_karirhub(vacancy(1, job_type_name="Part time"), self.refs)["type"], "Part time")
+        self.assertEqual(update.job_type("Remote"), "Remote")
+
+    def test_lokasi_dari_detail(self):
+        refs = {
+            "provinces": {PROV_BALI: "Bali", PROV_JKT: "DKI Jakarta"},
+            "cities": {CITY_BADUNG: ("Kab. Badung", PROV_BALI), CITY_JAKSEL: ("Kota Adm. Jakarta Selatan", PROV_JKT)},
+            "educations": {},
+        }
+        # Bentuk asli dari API (lowongan berlokasi kota).
+        real = {"region": {"regionable_type": "city", "key": "kab-badung-bali", "name": "Kab. Badung, Bali",
+                           "regionable": {"code": "5103", "name": "Kab. Badung", "province_id": PROV_BALI}},
+                "employer": {"city_id": CITY_BADUNG, "province_id": PROV_BALI}}
+        self.assertEqual(update.place_from_detail(real, refs), ("Kab. Badung", "Bali"))
+        district = {"region": {"regionable_type": "district", "name": "Kebayoran Baru, Kota Adm. Jakarta Selatan, DKI Jakarta"}}
+        self.assertEqual(update.place_from_detail(district, refs), ("Kota Adm. Jakarta Selatan", "DKI Jakarta"))
+        by_id = {"region": {"regionable_type": "district", "name": "Kebayoran Baru", "regionable": {"city_id": CITY_JAKSEL}}}
+        self.assertEqual(update.place_from_detail(by_id, refs), ("Kota Adm. Jakarta Selatan", "DKI Jakarta"))
+        employer_only = {"region": None, "employer": {"province_id": PROV_BALI}}
+        self.assertEqual(update.place_from_detail(employer_only, refs), ("", "Bali"))
+        self.assertEqual(update.place_from_detail({}, refs), ("", ""))
 
     def test_baris_rusak_dilewati(self):
         self.assertIsNone(update.from_karirhub({"id": "", "title": "x"}, self.refs))
@@ -258,6 +289,25 @@ class TestRun(Base):
         self.assertEqual(update.run(self.dir, now=NOW), 0)
         job = update.decode(self.read("jobs.json"))["01a1-0001"]
         self.assertEqual((job["city"], job["edu"]), ("", ""))
+
+    def test_lokasi_kecamatan_dilengkapi_sekali(self):
+        rows = [vacancy(1, locations=["district:abc"], city_name="Kebayoran Baru", platform_name="Karirhub"),
+                vacancy(2, locations=["district:def"], city_name="Antah Berantah", platform_name="Karirhub"),
+                vacancy(3)]
+        details = {"01a1-0001": {"region": {"name": "Kebayoran Baru, Kota Jakarta Selatan, DKI Jakarta"}},
+                   "01a1-0002": {"region": {"name": "Antah Berantah"}}}
+        api = self.use(FakeApi(rows, details=details))
+        update.run(self.dir, now=NOW)
+        jobs = update.decode(self.read("jobs.json"))
+        self.assertEqual((jobs["01a1-0001"]["city"], jobs["01a1-0001"]["province"]), ("Kota Jakarta Selatan", "DKI Jakarta"))
+        self.assertEqual((jobs["01a1-0002"]["city"], jobs["01a1-0002"]["province"]), ("Antah Berantah", ""))
+        self.assertEqual(self.read("jobs.json")["checked"], ["01a1-0002"])
+        self.assertEqual(len([c for c in api.calls if c[0].startswith(update.LISTING + "/")]), 2)
+        # Hari berikutnya: tidak ada detail yang diminta ulang.
+        api = self.use(FakeApi(rows, details=details))
+        update.run(self.dir, now=NOW)
+        self.assertEqual([c for c in api.calls if c[0].startswith(update.LISTING + "/")], [])
+        self.assertEqual(update.decode(self.read("jobs.json"))["01a1-0001"]["province"], "DKI Jakarta")
 
     def test_urut_terbaru(self):
         self.use(FakeApi([vacancy(1, published_at=100), vacancy(2, published_at=300), vacancy(3, published_at=200)]))

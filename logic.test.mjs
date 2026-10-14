@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   decode, filterJobs, sortJobs, countBy, median, salaryBy, salaryText, juta, ribu, ago, dateText, timeText,
-  slug, karirhubUrl, initials, htmlToText, filtersFromQuery, filtersToQuery, activeCount, summarize, cityLabel,
+  slug, karirhubUrl, initials, htmlToText, filtersFromQuery, filtersToQuery, activeCount, summarize, cityLabel, tidy, typeLabel, findMajor, majorFilter, MAJORS,
   EMPTY_FILTERS
 } from './logic.js';
 
@@ -146,6 +146,81 @@ test('inisial, label kota, html ke teks', () => {
   assert.equal(cityLabel('Kab. Badung'), 'Kab. Badung');
   assert.equal(htmlToText('<p>&bull; Ramah<br />&bull; Jujur &amp; teliti</p><ul><li>SIM C</li></ul><script>x</script>'),
     '• Ramah\n• Jujur & teliti\n• SIM C\nx');
+});
+
+test('label kota, tipe kerja, dan judul huruf besar dirapikan', () => {
+  assert.equal(cityLabel('Kota Adm. Jakarta Selatan'), 'Jakarta Selatan');
+  assert.equal(cityLabel('Kab. Adm. Kepulauan Seribu'), 'Kab. Kepulauan Seribu');
+  assert.equal(cityLabel('Kebayoran Baru'), 'Kebayoran Baru');
+  assert.equal(typeLabel('Contract'), 'Kontrak');
+  assert.equal(typeLabel('Internship'), 'Magang');
+  assert.equal(typeLabel('Full time'), 'Full time');
+  assert.equal(tidy('ADMIN MARKETING'), 'Admin Marketing');
+  assert.equal(tidy('PT PARAGON TECHNOLOGY AND INNOVATION'), 'PT Paragon Technology and Innovation');
+  assert.equal(tidy('LOGISTIK DC and E-COMMERCE BALI'), 'Logistik DC and E-Commerce Bali');
+  assert.equal(tidy('DW STEWARD'), 'DW Steward');
+  assert.equal(tidy('PT CHAMP RESTO INDONESIA TBK'), 'PT Champ Resto Indonesia Tbk');
+  assert.equal(tidy('STAFF ADMIN (SMA/SMK)'), 'Staff Admin (SMA/SMK)');
+  assert.equal(tidy('DI JUAL CEPAT'), 'Di Jual Cepat');
+  assert.equal(tidy('Sales Executive'), 'Sales Executive');
+  assert.equal(tidy('IT Support'), 'IT Support');
+  assert.equal(tidy('HRD'), 'HRD');
+  assert.equal(tidy('System Analyst REGULATORY REPORTING'), 'System Analyst Regulatory Reporting');
+  assert.equal(tidy('Staff HRD & GA (Bekasi)'), 'Staff HRD & GA (Bekasi)');
+});
+
+test('upah harian tidak dihitung sebagai gaji bulanan', () => {
+  const d = decode({ ...DATA, jobs: [['x', 'TENAGA BONGKAR MUAT', 0, 0, 0, 0, 0, 0, 0, 0, 100000, 132000, NOW, 0, 0, 0]] });
+  assert.equal(d.jobs[0].pay, 0);
+  assert.equal(d.jobs[0].title, 'Tenaga Bongkar Muat');
+});
+
+test('jurusan: cari dari nama, singkatan, dan sebagian nama', () => {
+  assert.equal(findMajor('Akuntansi').label, 'Akuntansi');
+  assert.equal(findMajor('AKL').label, 'Akuntansi');
+  assert.equal(findMajor('tkj').label, 'Teknik Informatika');
+  assert.equal(findMajor('IT').label, 'Teknik Informatika');
+  assert.equal(findMajor('dkv').label, 'Desain Komunikasi Visual');
+  assert.equal(findMajor('tata boga').label, 'Tata Boga & Kuliner');
+  assert.equal(findMajor('perhot').label, 'Perhotelan & Pariwisata');
+  assert.equal(findMajor('psikologi').label, 'Psikologi & SDM');
+  assert.equal(findMajor('xyzzy'), null);
+  assert.equal(findMajor('a'), null);
+  for (const m of MAJORS) for (const a of m.aka) assert.equal(a, a.toLowerCase(), m.label);
+});
+
+test('jurusan: cocok lewat bidang atau kata di judul, bukan potongan kata', () => {
+  const job = (title, fn = '') => ({ title, fn, titleFold: title.toLowerCase() });
+  const ak = majorFilter('akuntansi');
+  assert.ok(ak(job('Staff Accounting')));
+  assert.ok(ak(job('Admin', 'Akuntansi & Keuangan')));
+  assert.ok(ak(job('Kasir Toko')));
+  assert.ok(!ak(job('Sales Executive', 'Penjualan')));
+  const ti = majorFilter('TI');
+  assert.ok(ti(job('IT Support')));
+  assert.ok(ti(job('Backend Developer')));
+  assert.ok(!ti(job('Waitress')), 'kata "it" di dalam kata lain tidak ikut');
+  assert.ok(!ti(job('Admin Kitchen')));
+  const boga = majorFilter('tata boga');
+  assert.ok(boga(job('Cook Helper')));
+  assert.ok(boga(job('Head Chef')));
+  assert.ok(boga(job('Kitchen Staff')));
+  assert.ok(!boga(job('Admin Gudang', 'Logistik')));
+  // Teks bebas yang bukan jurusan: dicocokkan ke judul.
+  const bebas = majorFilter('barista');
+  assert.ok(bebas(job('Barista Kopi')));
+  assert.ok(!bebas(job('Kasir')));
+  assert.equal(majorFilter(''), null);
+});
+
+test('filter jurusan ikut di filterJobs dan URL', () => {
+  assert.deepEqual(ids(filterJobs(jobs, F({ jur: 'Teknik Informatika' }), NOW)), ['a2']);
+  assert.deepEqual(ids(filterJobs(jobs, F({ jur: 'tata boga' }), NOW)), ['a3']);
+  assert.deepEqual(ids(filterJobs(jobs, F({ jur: 'gudang' }), NOW)), ['a1', 'a4']);
+  const qs = filtersToQuery(F({ jur: 'Akuntansi', prov: 'Bali' }));
+  assert.equal(qs, '?jur=Akuntansi&prov=Bali');
+  assert.equal(filtersFromQuery(qs).jur, 'Akuntansi');
+  assert.equal(activeCount(F({ jur: 'Akuntansi' })), 1);
 });
 
 test('filter <-> URL', () => {
