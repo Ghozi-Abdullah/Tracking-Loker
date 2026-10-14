@@ -1,0 +1,8 @@
+{
+  "name": "loker-radar",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test && python3 -m unittest -q test_update"
+  }
+}

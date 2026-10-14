@@ -1,0 +1,600 @@
+#!/usr/bin/env python3
+"""Loker Radar: penarik data lowongan harian.
+
+Sumber
+  1. Karirhub Kemnaker, lewat API publik yang juga dipakai situs karirhub.kemnaker.go.id.
+  2. Situs karier perusahaan (Greenhouse, Lever, Ashby) yang terdaftar di perusahaan.json.
+
+Hasil (ditulis di folder yang sama dengan skrip ini)
+  jobs.json   lowongan aktif dalam format ringkas, dibaca situs saat dibuka
+  links.json  tautan lamaran asli per lowongan, dibaca saat detail dibuka
+  stats.json  riwayat harian: total aktif, baru, ditutup
+
+Hanya memakai pustaka standar Python, jadi tidak perlu pip install di GitHub Actions.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+import time
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
+from urllib.error import HTTPError, URLError
+from urllib.parse import parse_qsl, urlencode, urlsplit, urlunsplit
+from urllib.request import Request, urlopen
+
+API = "https://api.kemnaker.go.id/karirhub"
+LISTING = f"{API}/vacancy/v2/published-industrial-vacancies"
+PROVINCES = f"{API}/onboarding/v2/provinces"
+CITIES = f"{API}/onboarding/v2/cities"
+EDUCATIONS = f"{API}/v1/educations"
+LOGO_BASE = "https://kemnaker-assets.oss-accelerate.aliyuncs.com/"
+
+WIB = timezone(timedelta(hours=7))
+HERE = Path(__file__).resolve().parent
+FORMAT_VERSION = 1
+HISTORY_DAYS = 180
+# Penarikan dianggap utuh bila minimal 90% dari total yang dilaporkan API berhasil diambil.
+COMPLETE_RATIO = 0.9
+MAX_PAGES = 4000
+FIELDS = [
+    "id", "title", "company", "city", "province", "platform", "function",
+    "industry", "type", "edu", "smin", "smax", "posted", "expires", "first", "via",
+]
+LISTS = ["company", "city", "province", "platform", "function", "industry", "type", "edu", "via"]
+
+
+def log(msg: str) -> None:
+    print(msg, flush=True)
+
+
+# ---------------------------------------------------------------- jaringan
+
+def _user_agent() -> str:
+    repo = os.environ.get("GITHUB_REPOSITORY", "")
+    return f"LokerRadar/1.0 (+https://github.com/{repo})" if repo else "LokerRadar/1.0"
+
+
+def http_json(url: str, params: dict | None = None, tries: int = 4, timeout: int = 40):
+    """GET JSON dengan percobaan ulang. Galat 4xx (kecuali 408/429) langsung dilempar."""
+    if params:
+        url = url + ("&" if "?" in url else "?") + urlencode(params)
+    last: Exception | None = None
+    for attempt in range(tries):
+        try:
+            req = Request(url, headers={"Accept": "application/json", "User-Agent": _user_agent()})
+            with urlopen(req, timeout=timeout) as res:
+                return json.loads(res.read().decode("utf-8"))
+        except HTTPError as err:
+            last = err
+            if 400 <= err.code < 500 and err.code not in (408, 429):
+                raise
+        except (URLError, TimeoutError, ConnectionError, json.JSONDecodeError) as err:
+            last = err
+        wait = 2 ** attempt * 2
+        log(f"  ulangi dalam {wait} dtk ({last})")
+        time.sleep(wait)
+    raise RuntimeError(f"Gagal mengambil {url}: {last}")
+
+
+# Diganti di pengujian.
+fetch = http_json
+sleep = time.sleep
+
+
+def paged(url: str, params: dict | None = None, limits=(100, 50, 18), delay: float = 0.25,
+          max_pages: int = MAX_PAGES):
+    """Ambil semua halaman dari endpoint Laravel (data + meta.last_page).
+
+    Mengembalikan (items, total_dari_meta). Jika ukuran halaman ditolak, coba ukuran lebih kecil.
+    """
+    params = dict(params or {})
+    limit = None
+    first = None
+    for size in limits:
+        try:
+            first = fetch(url, {**params, "page": 1, "limit": size})
+            limit = size
+            break
+        except HTTPError as err:
+            if err.code in (400, 422):
+                log(f"  ukuran halaman {size} ditolak, coba lebih kecil")
+                continue
+            raise
+    if first is None:
+        raise RuntimeError(f"Semua ukuran halaman ditolak oleh {url}")
+
+    items = list(first.get("data") or [])
+    meta = first.get("meta") or {}
+    total = _int(meta.get("total"), len(items))
+    last_page = _int(meta.get("last_page", meta.get("lastPage")), 1)
+    page = 1
+    while page < min(last_page, max_pages):
+        page += 1
+        if delay:
+            sleep(delay)
+        payload = fetch(url, {**params, "page": page, "limit": limit})
+        rows = payload.get("data") or []
+        if not rows:
+            break
+        items.extend(rows)
+        meta = payload.get("meta") or {}
+        last_page = _int(meta.get("last_page", meta.get("lastPage")), last_page)
+        if page % 50 == 0:
+            log(f"  halaman {page}/{last_page} ({len(items)} baris)")
+    return items, total
+
+
+def _int(value, default=0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
+# ---------------------------------------------------------------- referensi Karirhub
+
+def load_refs() -> dict:
+    """Provinsi, kota/kabupaten, dan jenjang pendidikan. Masing-masing boleh gagal."""
+    refs = {"provinces": {}, "cities": {}, "educations": {}}
+    try:
+        rows, _ = paged(PROVINCES, limits=(100, 50), delay=0)
+        refs["provinces"] = {str(r["id"]): clean(r.get("name")) for r in rows if r.get("id")}
+    except Exception as err:  # noqa: BLE001
+        log(f"! provinsi gagal: {err}")
+    try:
+        rows, _ = paged(CITIES, limits=(100, 50), delay=0.1)
+        refs["cities"] = {
+            str(r["id"]): (clean(r.get("name")), str(r.get("province_id") or ""))
+            for r in rows if r.get("id")
+        }
+    except Exception as err:  # noqa: BLE001
+        log(f"! kota gagal: {err}")
+    try:
+        payload = fetch(EDUCATIONS)
+        refs["educations"] = {str(r["id"]): clean(r.get("name")) for r in payload.get("data") or [] if r.get("id")}
+    except Exception as err:  # noqa: BLE001
+        log(f"! pendidikan gagal: {err}")
+    log(f"Referensi: {len(refs['provinces'])} provinsi, {len(refs['cities'])} kota/kab, "
+        f"{len(refs['educations'])} jenjang")
+    return refs
+
+
+# ---------------------------------------------------------------- normalisasi
+
+def clean(value) -> str:
+    if value is None:
+        return ""
+    text = re.sub(r"\s+", " ", str(value)).strip()
+    return text
+
+
+def strip_tracking(url: str) -> str:
+    """Buang parameter utm_* supaya tautan lebih pendek."""
+    if not url:
+        return ""
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return url
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True) if not k.lower().startswith("utm_")]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), parts.fragment))
+
+
+def logo_tail(url: str) -> str:
+    url = clean(url)
+    if url.startswith(LOGO_BASE):
+        return url[len(LOGO_BASE):]
+    return url
+
+
+def wib_epoch(text: str) -> int:
+    """'2026-10-13 16:21:09' (waktu WIB) menjadi detik epoch."""
+    for fmt in ("%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+        try:
+            return int(datetime.strptime(text, fmt).replace(tzinfo=WIB).timestamp())
+        except (TypeError, ValueError):
+            continue
+    return 0
+
+
+def iso_epoch(text) -> int:
+    if not text:
+        return 0
+    if isinstance(text, (int, float)):
+        # Lever memakai milidetik.
+        return int(text / 1000) if text > 10_000_000_000 else int(text)
+    try:
+        return int(datetime.fromisoformat(str(text).replace("Z", "+00:00")).timestamp())
+    except ValueError:
+        return 0
+
+
+def salary(row: dict) -> tuple[int, int]:
+    if row.get("show_salary") is False:
+        return 0, 0
+    lo = row.get("min_salary_amount")
+    hi = row.get("max_salary_amount")
+    if lo is None:
+        lo = (row.get("min_salary") or {}).get("amount")
+    if hi is None:
+        hi = (row.get("max_salary") or {}).get("amount")
+    lo, hi = _int(lo), _int(hi)
+    currency = str(row.get("min_salary_currency") or row.get("max_salary_currency") or "IDR").upper()
+    if currency != "IDR":
+        return 0, 0
+    # Angka di bawah Rp100.000 hampir pasti salah ketik (mis. "5" untuk 5 juta); abaikan.
+    lo = lo if lo >= 100_000 else 0
+    hi = hi if hi >= 100_000 else 0
+    if lo and hi and lo > hi:
+        lo, hi = hi, lo
+    return lo, hi
+
+
+def from_karirhub(row: dict, refs: dict) -> dict | None:
+    job_id = clean(row.get("id"))
+    title = clean(row.get("title"))
+    if not job_id or not title:
+        return None
+    city, province = "", ""
+    for loc in row.get("locations") or []:
+        kind, _, ref = str(loc).partition(":")
+        if kind == "city" and ref in refs["cities"]:
+            city, prov_id = refs["cities"][ref]
+            province = refs["provinces"].get(prov_id, "")
+            break
+        if kind == "province" and ref in refs["provinces"]:
+            province = refs["provinces"][ref]
+            break
+    if not city and row.get("city_name"):
+        city = clean(row.get("city_name"))
+    lo, hi = salary(row)
+    posted = _int(row.get("published_at")) or wib_epoch(clean(row.get("created_at")))
+    return {
+        "id": job_id,
+        "title": title,
+        "company": clean(row.get("company_name")) or "Perusahaan dirahasiakan",
+        "logo": logo_tail(row.get("company_logo_uri") or ""),
+        "city": city,
+        "province": province,
+        "platform": clean(row.get("platform_name")) or "Karirhub",
+        "function": clean(row.get("job_function_name")),
+        "industry": clean(row.get("industry_name")),
+        "type": clean(row.get("job_type_name")),
+        "edu": refs["educations"].get(str(row.get("education_id") or ""), ""),
+        "smin": lo,
+        "smax": hi,
+        "posted": posted,
+        "expires": _int(row.get("expires_at")),
+        "via": "karirhub",
+        "link": strip_tracking(clean(row.get("platform_link"))),
+    }
+
+
+def fetch_karirhub(refs: dict, max_pages: int = MAX_PAGES):
+    log("Karirhub: menarik daftar lowongan")
+    rows, total = paged(LISTING, max_pages=max_pages)
+    jobs, seen = [], set()
+    for row in rows:
+        job = from_karirhub(row, refs)
+        if job and job["id"] not in seen:
+            seen.add(job["id"])
+            jobs.append(job)
+    complete = total > 0 and len(jobs) >= total * COMPLETE_RATIO
+    log(f"Karirhub: {len(jobs)} lowongan unik dari total {total} ({'utuh' if complete else 'sebagian'})")
+    return jobs, total, complete
+
+
+# ---------------------------------------------------------------- situs karier perusahaan
+
+ID_ALIASES = {
+    # kata kunci lokasi -> (kota yang ditampilkan, kata kunci provinsi)
+    "jakarta": ("Jakarta", "jakarta"),
+    "tangerang": ("Tangerang", "banten"),
+    "bsd": ("Tangerang Selatan", "banten"),
+    "bekasi": ("Bekasi", "jawa barat"),
+    "depok": ("Depok", "jawa barat"),
+    "bogor": ("Bogor", "jawa barat"),
+    "bandung": ("Bandung", "jawa barat"),
+    "surabaya": ("Surabaya", "jawa timur"),
+    "malang": ("Malang", "jawa timur"),
+    "semarang": ("Semarang", "jawa tengah"),
+    "solo": ("Surakarta", "jawa tengah"),
+    "surakarta": ("Surakarta", "jawa tengah"),
+    "yogyakarta": ("Yogyakarta", "yogyakarta"),
+    "jogja": ("Yogyakarta", "yogyakarta"),
+    "bali": ("Bali", "bali"),
+    "denpasar": ("Denpasar", "bali"),
+    "medan": ("Medan", "sumatera utara"),
+    "batam": ("Batam", "kepulauan riau"),
+    "palembang": ("Palembang", "sumatera selatan"),
+    "makassar": ("Makassar", "sulawesi selatan"),
+    "balikpapan": ("Balikpapan", "kalimantan timur"),
+}
+
+
+def indonesia_place(location: str, provinces: dict) -> tuple[str, str] | None:
+    """Cari bagian lokasi yang berada di Indonesia. None jika lowongan di luar Indonesia."""
+    for part in re.split(r"[;|/]", location or ""):
+        low = part.lower()
+        hit = next((k for k in ID_ALIASES if re.search(rf"\b{k}\b", low)), None)
+        if hit:
+            city, prov_key = ID_ALIASES[hit]
+            prov = next((n for n in provinces.values() if prov_key in n.lower()), "")
+            if not prov and prov_key == "jakarta":
+                prov = "DKI Jakarta"
+            return city, prov
+        if "indonesia" in low:
+            city = clean(part.split(",")[0])
+            return ("" if city.lower() == "indonesia" else city), ""
+    return None
+
+
+def from_board(kind: str, company: dict, raw: dict, provinces: dict) -> dict | None:
+    name = company.get("nama") or company.get("slug")
+    if kind == "greenhouse":
+        loc = (raw.get("location") or {}).get("name", "")
+        title, link = raw.get("title"), raw.get("absolute_url")
+        posted = iso_epoch(raw.get("first_published") or raw.get("updated_at"))
+        job_type, function = "", ""
+        ident = raw.get("id")
+    elif kind == "lever":
+        cats = raw.get("categories") or {}
+        loc = ", ".join(filter(None, [cats.get("location"), *(cats.get("allLocations") or [])]))
+        title, link = raw.get("text"), raw.get("hostedUrl")
+        posted = iso_epoch(raw.get("createdAt"))
+        job_type, function = cats.get("commitment") or "", cats.get("team") or ""
+        ident = raw.get("id")
+    elif kind == "ashby":
+        loc = ", ".join(filter(None, [raw.get("location"), *[
+            (s.get("location") if isinstance(s, dict) else str(s)) for s in raw.get("secondaryLocations") or []
+        ]]))
+        title, link = raw.get("title"), raw.get("jobUrl")
+        posted = iso_epoch(raw.get("publishedAt"))
+        job_type, function = raw.get("employmentType") or "", raw.get("department") or ""
+        ident = raw.get("id")
+    else:
+        return None
+    place = indonesia_place(loc, provinces)
+    if place is None or not title or not ident:
+        return None
+    job_type = {"FullTime": "Full time", "PartTime": "Part time", "Intern": "Magang",
+                "Contract": "Kontrak", "Full-time": "Full time", "Part-time": "Part time",
+                "Internship": "Magang"}.get(job_type, job_type)
+    return {
+        "id": f"{kind[:2]}-{company['slug']}-{ident}",
+        "title": clean(title),
+        "company": clean(name),
+        "logo": clean(company.get("logo") or ""),
+        "city": place[0],
+        "province": place[1],
+        "platform": f"Karier {clean(name)}",
+        "function": clean(function),
+        "industry": clean(company.get("industri") or ""),
+        "type": clean(job_type),
+        "edu": "",
+        "smin": 0,
+        "smax": 0,
+        "posted": posted,
+        "expires": 0,
+        "via": f"{kind}:{company['slug']}",
+        "link": clean(link),
+    }
+
+
+def fetch_board(company: dict, provinces: dict):
+    kind, slug = company.get("ats", "").lower(), company.get("slug", "")
+    if kind == "greenhouse":
+        raw = fetch(f"https://boards-api.greenhouse.io/v1/boards/{slug}/jobs").get("jobs") or []
+    elif kind == "lever":
+        raw = fetch(f"https://api.lever.co/v0/postings/{slug}", {"mode": "json"}) or []
+    elif kind == "ashby":
+        raw = fetch(f"https://api.ashbyhq.com/posting-api/job-board/{slug}").get("jobs") or []
+    else:
+        raise ValueError(f"ATS tidak dikenal: {kind}")
+    jobs = [j for j in (from_board(kind, company, r, provinces) for r in raw) if j]
+    return jobs, len(raw)
+
+
+def load_companies(path: Path) -> list[dict]:
+    if not path.exists():
+        return []
+    data = json.loads(path.read_text("utf-8"))
+    return [c for c in data if isinstance(c, dict) and c.get("ats") and c.get("slug")]
+
+
+# ---------------------------------------------------------------- penggabungan + riwayat
+
+def merge(prev: dict, fresh: list[dict], complete: set[str], today: int, now: int):
+    """Gabungkan hasil baru dengan data kemarin.
+
+    Lowongan lama yang tidak muncul lagi dianggap ditutup hanya jika sumbernya ditarik utuh;
+    kalau sumbernya gagal atau sebagian, lowongan lama dipertahankan sampai tanggal kedaluwarsanya.
+    """
+    out: dict[str, dict] = {}
+    added = 0
+    for job in fresh:
+        old = prev.get(job["id"])
+        job["first"] = old["first"] if old else today
+        if not old:
+            added += 1
+        out[job["id"]] = job
+    closed = 0
+    for job_id, job in prev.items():
+        if job_id in out:
+            continue
+        if job["via"] not in complete and (not job["expires"] or job["expires"] > now):
+            out[job_id] = job
+        else:
+            closed += 1
+    expired = [k for k, j in out.items() if j["expires"] and j["expires"] < now]
+    for k in expired:
+        del out[k]
+    closed += len([k for k in expired if k in prev])
+    jobs = sorted(out.values(), key=lambda j: (-j["posted"], j["title"]))
+    return jobs, added, closed
+
+
+def day_number(dt: datetime) -> int:
+    return int(dt.strftime("%Y%m%d"))
+
+
+def update_stats(stats: dict, jobs: list[dict], added: int | None, closed: int | None, now: datetime) -> dict:
+    day = now.strftime("%Y-%m-%d")
+    cutoff = int(now.timestamp()) - 86400
+    row = {
+        "d": day,
+        "active": len(jobs),
+        "new": added,
+        "closed": closed,
+        "posted24": sum(1 for j in jobs if j["posted"] >= cutoff),
+        "companies": len({j["company"] for j in jobs}),
+        "salaried": sum(1 for j in jobs if j["smin"] or j["smax"]),
+    }
+    days = [d for d in stats.get("days", []) if d.get("d") != day]
+    days.append(row)
+    days = sorted(days, key=lambda d: d["d"])[-HISTORY_DAYS:]
+    return {"v": FORMAT_VERSION, "days": days}
+
+
+# ---------------------------------------------------------------- format berkas
+
+def encode(jobs: list[dict], meta: dict) -> dict:
+    tables = {name: {} for name in LISTS}
+    logos: dict[str, str] = {}
+
+    def ref(name: str, value: str) -> int:
+        table = tables[name]
+        if value not in table:
+            table[value] = len(table)
+        return table[value]
+
+    rows = []
+    for j in jobs:
+        if j.get("logo") and j["company"] not in logos:
+            logos[j["company"]] = j["logo"]
+        rows.append([
+            j["id"], j["title"], ref("company", j["company"]), ref("city", j["city"]),
+            ref("province", j["province"]), ref("platform", j["platform"]), ref("function", j["function"]),
+            ref("industry", j["industry"]), ref("type", j["type"]), ref("edu", j["edu"]),
+            j["smin"], j["smax"], j["posted"], j["expires"], j["first"], ref("via", j["via"]),
+        ])
+    lists = {name: list(table) for name, table in tables.items()}
+    lists["logo"] = [logos.get(c, "") for c in lists["company"]]
+    return {"v": FORMAT_VERSION, **meta, "logoBase": LOGO_BASE, "fields": FIELDS, "lists": lists, "jobs": rows}
+
+
+def decode(data: dict) -> dict[str, dict]:
+    if not data or data.get("v") != FORMAT_VERSION:
+        return {}
+    lists = data.get("lists") or {}
+    fields = data.get("fields") or FIELDS
+    logos = lists.get("logo") or []
+    out = {}
+    for row in data.get("jobs") or []:
+        rec = dict(zip(fields, row))
+        for name in LISTS:
+            idx = rec.get(name)
+            rec[name] = lists.get(name, [])[idx] if isinstance(idx, int) and idx < len(lists.get(name, [])) else ""
+        company_idx = row[fields.index("company")]
+        rec["logo"] = logos[company_idx] if company_idx < len(logos) else ""
+        rec.setdefault("link", "")
+        out[rec["id"]] = rec
+    return out
+
+
+def read_json(path: Path, default):
+    try:
+        return json.loads(path.read_text("utf-8"))
+    except (OSError, ValueError):
+        return default
+
+
+def write_json(path: Path, data) -> None:
+    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), "utf-8")
+    os.replace(tmp, path)
+
+
+# ---------------------------------------------------------------- utama
+
+def run(out_dir: Path, max_pages: int = MAX_PAGES, now: datetime | None = None) -> int:
+    now = now or datetime.now(WIB)
+    now_ts = int(now.timestamp())
+    jobs_path, links_path, stats_path = out_dir / "jobs.json", out_dir / "links.json", out_dir / "stats.json"
+
+    prev_data = read_json(jobs_path, {})
+    prev = decode(prev_data)
+    old_links = read_json(links_path, {})
+    for job_id, job in prev.items():
+        job["link"] = old_links.get(job_id, "")
+
+    refs = load_refs()
+    fresh: list[dict] = []
+    complete: set[str] = set()
+    sources = []
+
+    try:
+        jobs, total, whole = fetch_karirhub(refs, max_pages=max_pages)
+        fresh += jobs
+        if whole:
+            complete.add("karirhub")
+        sources.append({"name": "Karirhub Kemnaker", "ok": True, "count": len(jobs), "total": total, "complete": whole})
+    except Exception as err:  # noqa: BLE001
+        log(f"! Karirhub gagal: {err}")
+        sources.append({"name": "Karirhub Kemnaker", "ok": False, "count": 0, "error": str(err)[:200]})
+
+    for company in load_companies(out_dir / "perusahaan.json"):
+        label = company.get("nama") or company["slug"]
+        try:
+            jobs, raw_count = fetch_board(company, refs["provinces"])
+            fresh += jobs
+            complete.add(f"{company['ats'].lower()}:{company['slug']}")
+            sources.append({"name": f"Karier {label}", "ok": True, "count": len(jobs), "total": raw_count})
+            log(f"{label}: {len(jobs)} lowongan di Indonesia dari {raw_count}")
+        except Exception as err:  # noqa: BLE001
+            log(f"! {label} gagal: {err}")
+            sources.append({"name": f"Karier {label}", "ok": False, "count": 0, "error": str(err)[:200]})
+
+    if not fresh:
+        log("Tidak ada data yang berhasil ditarik; berkas lama tidak diubah.")
+        return 1
+
+    jobs, added, closed = merge(prev, fresh, complete, day_number(now), now_ts)
+    first_run = not prev
+    meta = {
+        "updated": now.isoformat(timespec="seconds"),
+        "sources": sources,
+    }
+    write_json(jobs_path, encode(jobs, meta))
+    write_json(links_path, {j["id"]: j["link"] for j in jobs if j.get("link")})
+    stats = update_stats(read_json(stats_path, {}), jobs, None if first_run else added,
+                         None if first_run else closed, now)
+    write_json(stats_path, stats)
+
+    summary = (f"Aktif {len(jobs)} · baru {added if not first_run else '-'} · "
+               f"ditutup {closed if not first_run else '-'}")
+    log(summary)
+    step = os.environ.get("GITHUB_STEP_SUMMARY")
+    if step:
+        with open(step, "a", encoding="utf-8") as fh:
+            fh.write(f"### Loker Radar {now:%d-%m-%Y %H.%M} WIB\n\n{summary}\n\n| Sumber | Lowongan | Status |\n|---|---|---|\n")
+            for s in sources:
+                fh.write(f"| {s['name']} | {s['count']} | {'OK' if s['ok'] else 'Gagal: ' + s.get('error', '')} |\n")
+    return 0
+
+
+def main(argv=None) -> int:
+    parser = argparse.ArgumentParser(description="Tarik lowongan harian untuk Loker Radar.")
+    parser.add_argument("--out", type=Path, default=HERE, help="folder tujuan jobs.json / links.json / stats.json")
+    parser.add_argument("--max-pages", type=int, default=MAX_PAGES, help="batas halaman Karirhub (untuk uji cepat)")
+    args = parser.parse_args(argv)
+    return run(args.out, max_pages=args.max_pages)
+
+
+if __name__ == "__main__":
+    sys.exit(main())
