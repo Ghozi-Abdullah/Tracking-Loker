@@ -1,1 +1,39 @@
+name: Tarik lowongan harian
 
+on:
+  schedule:
+    - cron: "0 23 * * *"   # setiap hari 06.00 WIB
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tarik-lowongan
+  cancel-in-progress: false
+
+jobs:
+  tarik:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Uji penarik data
+        run: python3 -m unittest -q test_update
+
+      - name: Tarik lowongan
+        run: python3 update.py
+
+      - name: Simpan data baru
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add jobs.json links.json stats.json
+          if git diff --cached --quiet; then
+            echo "Tidak ada perubahan data."
+            exit 0
+          fi
+          git commit -m "Data lowongan $(TZ=Asia/Jakarta date +'%d-%m-%Y')"
+          git pull --rebase origin "${GITHUB_REF_NAME}"
+          git push
