@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="icon.svg" width="76" alt="">
+
 # Tracking Loker
 
 **Semua lowongan kerja di Indonesia dalam satu layar, diperbarui sendiri setiap pagi.**
