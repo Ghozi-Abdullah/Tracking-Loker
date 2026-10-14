@@ -75,7 +75,7 @@ Lowongan resmi tidak pernah memungut biaya. Tracking Loker mengingatkan hal ini 
 
 ## Dibangun dengan
 
-Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Google Sans Flex · Ilustrasi Notionists
+Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Google Sans Flex
 
 ---
 
@@ -83,6 +83,6 @@ Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Goog
 
 Dibuat oleh [Ghozi Abdullah](https://github.com/Ghozi-Abdullah) · Proyek Hari 2 dari **#30Hari30Website**
 
-Lisensi MIT · Data lowongan milik [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) dan masing-masing perusahaan · Tracking Loker tidak berafiliasi dengan Kementerian Ketenagakerjaan · Huruf Google Sans Flex (SIL Open Font License) · Ilustrasi [Notionists](https://www.dicebear.com/styles/notionists/) oleh Zoish (CC0) lewat DiceBear
+Lisensi MIT · Data lowongan milik [Karirhub Kemnaker](https://karirhub.kemnaker.go.id) dan masing-masing perusahaan · Tracking Loker tidak berafiliasi dengan Kementerian Ketenagakerjaan · Huruf Google Sans Flex (SIL Open Font License) · Foto orang dari [Pexels](https://www.pexels.com) (Pexels License)
 
 </div>

@@ -23,10 +23,10 @@ const POPULAR_MAJORS = ['Akuntansi', 'Manajemen', 'Teknik Informatika', 'Adminis
   'Teknik Mesin', 'Teknik Sipil & Arsitektur', 'Keperawatan & Kebidanan', 'Tata Boga & Kuliner', 'Pendidikan', 'Hukum'];
 
 const MOODS = [
-  { tone: 'blue', title: 'Lulusan SMA/SMK', unit: 'lowongan', icon: 'star', img: 'orang-raka.svg', patch: { edu: 'sma' } },
-  { tone: 'green', title: 'Mau magang dulu', unit: 'magang', icon: 'cap', img: 'orang-nadia.svg', patch: { types: ['Magang'] } },
-  { tone: 'pink', title: 'Baru masuk hari ini', unit: 'dalam 24 jam', icon: 'bolt', img: 'orang-ayu.svg', patch: { waktu: '1' } },
-  { tone: 'yellow', title: 'Gaji di atas 5 juta', unit: 'lowongan', icon: 'coin', img: 'orang-laila.svg', patch: { gaji: '5' } }
+  { tone: 'blue', title: 'Lulusan SMA/SMK', unit: 'lowongan', icon: 'star', img: 'foto-mekanik.webp', fit: 'right:0', patch: { edu: 'sma' } },
+  { tone: 'green', title: 'Mau magang dulu', unit: 'magang', icon: 'cap', img: 'foto-magang.webp', fit: 'right:0', patch: { types: ['Magang'] } },
+  { tone: 'pink', title: 'Baru masuk hari ini', unit: 'dalam 24 jam', icon: 'bolt', img: 'foto-chef.webp', fit: 'right:5%', patch: { waktu: '1' } },
+  { tone: 'yellow', title: 'Gaji di atas 5 juta', unit: 'lowongan', icon: 'coin', img: 'foto-perawat.webp', fit: 'right:7%', patch: { gaji: '5' } }
 ];
 
 function todayMessage() {
@@ -248,7 +248,7 @@ function renderMoods() {
       <span class="mood-title">${m.title}</span>
       <span class="mood-chip">${ribu(n)} ${m.unit}</span>
       <svg class="mood-icon"><use href="#i-${m.icon}"/></svg>
-      <img src="${m.img}" alt="" loading="lazy">
+      <img src="${m.img}" alt="" loading="lazy" style="${m.fit}">
     </button>`;
   }).join('');
 }
@@ -262,7 +262,7 @@ function renderCheer() {
   }
   const fresh = summarize(state.all, state.ref).fresh;
   $('#cheer').innerHTML = `
-    <div class="cheer-art"><img src="orang-bima.svg" alt=""></div>
+    <div class="cheer-art"><img src="foto-eksekutif.webp" alt=""></div>
     <div>
       <p class="cheer-eyebrow"><svg><use href="#i-heart"/></svg>Pesan hari ini untuk yang masih berjuang</p>
       <h2>${esc(m.title)}</h2>
@@ -321,12 +321,12 @@ function renderResults() {
     ? `dari ${ribu(state.all.length)} lowongan aktif · ${major ? `cocok untuk jurusan ${major.label}, dilihat dari bidang dan judul lowongan` : `bidang atau judulnya memuat "${state.f.jur}"`}`
     : n ? `dari ${ribu(state.all.length)} lowongan aktif` : 'Semua lowongan aktif, terbaru di atas';
   if (!state.all.length) {
-    listEl.innerHTML = `<div class="empty">${emptyArt('orang-sari.svg', 'yellow')}<b>Data pertama sedang disiapkan</b><p>Lowongan dari Karirhub Kemnaker dan situs karier perusahaan ditarik otomatis setiap pagi pukul 06.00 WIB.</p></div>`;
+    listEl.innerHTML = `<div class="empty">${emptyArt('foto-kantor.webp', 'yellow')}<b>Data pertama sedang disiapkan</b><p>Lowongan dari Karirhub Kemnaker dan situs karier perusahaan ditarik otomatis setiap pagi pukul 06.00 WIB.</p></div>`;
     $('#more').hidden = true;
     return;
   }
   if (!list.length) {
-    listEl.innerHTML = `<div class="empty">${emptyArt('orang-nadia.svg')}<b>Belum ketemu yang cocok</b><p>Coba kata kunci lain atau longgarkan filternya. Lowongan baru masuk setiap pagi, jadi besok bisa saja muncul.</p><button class="btn cta" type="button" data-reset>Hapus semua filter <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button></div>`;
+    listEl.innerHTML = `<div class="empty">${emptyArt('foto-magang.webp', 'green')}<b>Belum ketemu yang cocok</b><p>Coba kata kunci lain atau longgarkan filternya. Lowongan baru masuk setiap pagi, jadi besok bisa saja muncul.</p><button class="btn cta" type="button" data-reset>Hapus semua filter <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button></div>`;
     $('#more').hidden = true;
     return;
   }
@@ -371,7 +371,7 @@ function renderPasar() {
   const bento = $('#bento');
   if (!state.all.length) {
     $('#pasar-scope').textContent = '';
-    bento.innerHTML = `<div class="tile wide"><div class="empty" style="box-shadow:none;padding:24px">${emptyArt('orang-sari.svg', 'yellow')}<b>Analisis muncul setelah data pertama masuk</b></div></div>`;
+    bento.innerHTML = `<div class="tile wide"><div class="empty" style="box-shadow:none;padding:24px">${emptyArt('foto-kantor.webp', 'yellow')}<b>Analisis muncul setelah data pertama masuk</b></div></div>`;
     return;
   }
   const s = summarize(list, state.ref);
@@ -458,7 +458,7 @@ function renderTrend() {
   if (!box) return;
   const days = state.days.filter((d) => d.active);
   if (days.length < 2) {
-    box.innerHTML = `<div class="trend-empty">${emptyArt('orang-dimas.svg', 'blue')}<div><b>Grafik tren sedang tumbuh</b>Garisnya muncul setelah data terkumpul minimal 2 hari. Hari ini tercatat ${ribu(days[0]?.active || state.all.length)} lowongan aktif.</div></div>`;
+    box.innerHTML = `<div class="trend-empty">${emptyArt('foto-tambang.webp', 'blue')}<div><b>Grafik tren sedang tumbuh</b>Garisnya muncul setelah data terkumpul minimal 2 hari. Hari ini tercatat ${ribu(days[0]?.active || state.all.length)} lowongan aktif.</div></div>`;
     return;
   }
   const W = Math.max(280, box.clientWidth);
@@ -536,7 +536,7 @@ function updateSavedBadge() {
 function renderSaved() {
   const box = $('#saved-list');
   if (!state.saved.length) {
-    box.innerHTML = `<div class="empty">${emptyArt('orang-putri.svg', 'blue')}<b>Belum ada lowongan incaran</b><p>Ketuk ikon penanda di kartu lowongan untuk menyimpannya di sini, supaya tidak lupa dilamar. Simpanan hanya ada di perangkat ini.</p><a class="btn cta" href="#cari">Cari lowongan <span class="cta-dot"><svg><use href="#i-play"/></svg></span></a></div>`;
+    box.innerHTML = `<div class="empty">${emptyArt('foto-perawat.webp', 'yellow')}<b>Belum ada lowongan incaran</b><p>Ketuk ikon penanda di kartu lowongan untuk menyimpannya di sini, supaya tidak lupa dilamar. Simpanan hanya ada di perangkat ini.</p><a class="btn cta" href="#cari">Cari lowongan <span class="cta-dot"><svg><use href="#i-play"/></svg></span></a></div>`;
     return;
   }
   box.innerHTML = state.saved.map((s) => {

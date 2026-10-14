@@ -1,6 +1,6 @@
 /* Tracking Loker
    Ceria dan hangat: latar krem, bentuk geometris berwarna (pil, lingkaran, bintang, bunga),
-   ilustrasi orang bergaris Notionists, kartu kategori berwarna, tombol pil kuning.
+   foto orang berseragam kerja yang dipotong rapi, kartu kategori berwarna, tombol pil kuning.
    Huruf: Google Sans Flex tebal untuk judul. */
 
 @font-face {
@@ -208,7 +208,7 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .sh-heart { right: 1%; top: 37%; width: calc(var(--u) * 116); height: calc(var(--u) * 116); border-radius: 50%; background: var(--blue); color: #fff; }
 .sh-heart svg { width: calc(var(--u) * 46); height: calc(var(--u) * 46); }
 .arch { left: 34%; top: 0; width: calc(var(--u) * 196); height: calc(var(--u) * 296); border-radius: 999px; background: var(--yellow); overflow: hidden; }
-.arch img { position: absolute; left: 0; bottom: 0; width: 100%; }
+.arch img { position: absolute; left: -4%; bottom: 0; width: 108%; }
 .bubble {
   left: 52%; top: 4%; padding: calc(var(--u) * 10) calc(var(--u) * 18); border-radius: 999px; background: #fff; color: var(--ink);
   font-size: calc(var(--u) * 17); font-weight: 700; letter-spacing: -.01em; white-space: nowrap; box-shadow: var(--shadow); transform: rotate(-7deg);
@@ -220,7 +220,7 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 }
 .stage { left: 25%; bottom: 0; width: calc(var(--u) * 330); height: calc(var(--u) * 270); }
 .stage-pill { position: absolute; left: 0; right: 0; bottom: 0; height: 44%; border-radius: 999px; background: var(--navy); }
-.stage img { position: absolute; left: 20%; bottom: 0; width: 60%; }
+.stage img { position: absolute; left: 26%; bottom: 0; width: 48%; }
 
 /* Kartu kategori berwarna */
 .moods { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 18px; }
@@ -241,8 +241,9 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .mood.green .mood-icon { color: #fff; }
 .mood.pink .mood-icon { color: var(--yellow); }
 .mood.yellow .mood-icon { color: var(--navy); }
-.mood img { position: absolute; right: -8%; bottom: -3%; width: 74%; pointer-events: none; transition: transform .25s; }
-.mood:hover img { transform: translateY(-4px); }
+.mood img { position: absolute; right: 0; bottom: 0; height: 68%; width: auto; max-width: 70%; object-fit: contain; object-position: bottom; pointer-events: none; transition: transform .25s; transform-origin: bottom center; }
+.mood:hover img { transform: scale(1.03); }
+.mood-title, .mood-chip { position: relative; z-index: 1; }
 
 /* Pesan semangat */
 .cheer {
@@ -253,7 +254,7 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .cheer::after { content: ""; position: absolute; right: -40px; top: -60px; width: 180px; height: 180px; border-radius: 50%; background: rgba(255, 255, 255, .05); }
 .cheer-art { position: relative; width: 170px; height: 150px; }
 .cheer-art::before { content: ""; position: absolute; left: 10px; top: 0; width: 150px; height: 150px; border-radius: 50%; background: var(--yellow); }
-.cheer-art img { position: absolute; left: 0; bottom: 0; width: 170px; clip-path: inset(-100% 0 0 0 round 0 0 85px 85px); }
+.cheer-art img { position: absolute; left: 5px; bottom: 0; width: 160px; clip-path: inset(-100% 0 0 0 round 0 0 80px 80px); }
 .cheer-eyebrow { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: var(--yellow); margin-bottom: 6px; }
 .cheer-eyebrow svg { width: 15px; height: 15px; color: var(--pink); }
 .cheer h2 { font-size: 26px; line-height: 1.18; font-weight: 700; letter-spacing: -.02em; }
@@ -341,7 +342,8 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .empty-art { position: relative; width: 150px; height: 150px; margin-bottom: 4px; border-radius: 50%; background: var(--pink-soft); overflow: hidden; }
 .empty-art.yellow { background: var(--yellow); }
 .empty-art.blue { background: var(--blue-soft); }
-.empty-art img { position: absolute; left: 4%; bottom: -4%; width: 92%; }
+.empty-art.green { background: var(--green-soft); }
+.empty-art img { position: absolute; left: 50%; bottom: 0; height: 94%; width: auto; transform: translateX(-50%); }
 .skeleton { height: 168px; border-radius: 26px; background: linear-gradient(90deg, #fff 0%, #FFF9F2 50%, #fff 100%); background-size: 200% 100%; animation: shimmer 1.4s infinite; box-shadow: var(--shadow); }
 @keyframes shimmer { to { background-position: -200% 0; } }
 
@@ -504,11 +506,12 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
   .mood { flex: 0 0 214px; height: 252px; padding: 20px 20px 0; border-radius: 28px; scroll-snap-align: start; }
   .mood-title { font-size: 21px; }
   .mood-icon { width: 30px; height: 30px; top: 18px; right: 18px; }
+  .mood img { height: 56%; }
 
   .cheer { grid-template-columns: 96px minmax(0, 1fr); gap: 14px 16px; padding: 18px; border-radius: 28px; }
   .cheer-art { width: 96px; height: 96px; }
   .cheer-art::before { left: 6px; width: 86px; height: 86px; top: 4px; }
-  .cheer-art img { width: 98px; clip-path: inset(-100% 0 0 0 round 0 0 49px 49px); }
+  .cheer-art img { left: 4px; width: 90px; clip-path: inset(-100% 0 0 0 round 0 0 45px 45px); }
   .cheer h2 { font-size: 19px; }
   .cheer p { font-size: 14px; }
   .cheer .btn.cta { grid-column: 1 / -1; justify-content: space-between; }
