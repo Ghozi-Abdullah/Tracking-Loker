@@ -542,6 +542,14 @@ def update_stats(stats: dict, jobs: list[dict], added: int | None, closed: int |
         "companies": len({j["company"] for j in jobs}),
         "salaried": sum(1 for j in jobs if j["smin"] or j["smax"]),
     }
+    # Penarikan kedua di hari yang sama (jadwal cadangan atau manual): jumlah baru/ditutup dijumlahkan.
+    same = next((d for d in stats.get("days", []) if d.get("d") == day), None)
+    if same:
+        for key in ("new", "closed"):
+            if same.get(key) is not None and row[key] is not None:
+                row[key] += same[key]
+            elif row[key] is None:
+                row[key] = same.get(key)
     days = [d for d in stats.get("days", []) if d.get("d") != day]
     days.append(row)
     days = sorted(days, key=lambda d: d["d"])[-HISTORY_DAYS:]

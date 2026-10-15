@@ -262,6 +262,18 @@ class TestRun(Base):
         self.assertEqual((days[-1]["new"], days[-1]["closed"]), (2, 5))
         self.assertIn("01a1-0010", self.read("links.json"))
 
+    def test_dua_penarikan_sehari_menjumlahkan_baru_dan_ditutup(self):
+        self.use(FakeApi([vacancy(i) for i in range(10)]))
+        update.run(self.dir, now=NOW)
+        day2 = datetime(2026, 10, 15, 5, 13, tzinfo=update.WIB)
+        self.use(FakeApi([vacancy(i) for i in range(2, 12)]))      # pagi: 2 baru, 2 ditutup
+        update.run(self.dir, now=day2)
+        self.use(FakeApi([vacancy(i) for i in range(2, 13)]))      # cadangan: 1 baru lagi
+        update.run(self.dir, now=day2.replace(hour=7, minute=37))
+        days = self.read("stats.json")["days"]
+        self.assertEqual([d["d"] for d in days], ["2026-10-14", "2026-10-15"])
+        self.assertEqual((days[-1]["new"], days[-1]["closed"], days[-1]["active"]), (3, 2, 11))
+
     def test_sumber_gagal_tidak_menghapus_data_lama(self):
         self.use(FakeApi([vacancy(i) for i in range(10)]))
         update.run(self.dir, now=NOW)
