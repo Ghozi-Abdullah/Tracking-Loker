@@ -2,7 +2,9 @@ name: Tarik lowongan harian
 
 on:
   schedule:
-    - cron: "0 23 * * *"   # setiap hari 06.00 WIB
+    # Jadwal GitHub sering telat atau terlewat kalau tepat di awal jam, jadi dipilih menit yang sepi.
+    - cron: "13 22 * * *"   # 05.13 WIB, data siap sebelum ±06.00
+    - cron: "37 0 * * *"    # 07.37 WIB, cadangan kalau jadwal pagi terlewat
   workflow_dispatch:
 
 permissions:
@@ -15,7 +17,7 @@ concurrency:
 jobs:
   tarik:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +36,6 @@ jobs:
             echo "Tidak ada perubahan data."
             exit 0
           fi
-          git commit -m "Data lowongan $(TZ=Asia/Jakarta date +'%d-%m-%Y')"
+          git commit -m "Data lowongan $(TZ=Asia/Jakarta date +'%d-%m-%Y %H.%M')"
           git pull --rebase origin "${GITHUB_REF_NAME}"
           git push
