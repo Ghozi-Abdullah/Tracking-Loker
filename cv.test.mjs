@@ -198,11 +198,11 @@ test('mahasiswa: magang tetap muncul walau syaratnya S1, kerja penuh waktu S1 ti
 test('rekomendasi: setiap lowongan sekali, ada jalur jurusan sendiri saat jurusan beda arah dengan pengalaman', () => {
   const p = read(MESIN_MARKETING);
   const jobs = [
-    ...Array.from({ length: 8 }, (_, i) => job({ title: `Digital Marketing Staff ${i}`, fn: 'Pemasaran Internet', city: 'Kota Adm. Jakarta Selatan', province: 'DKI Jakarta' })),
-    job({ title: 'Social Media Officer', fn: 'Marketing dan Relasi Publik' }),
-    job({ title: 'Maintenance Engineer', fn: 'Teknik, Mesin' }),
-    job({ title: 'Mechanical Engineer', fn: 'Teknik, Mesin' }),
-    job({ title: 'Kasir', fn: 'Operasi Ritel', edu: 'SMA atau Sederajat' })
+    ...Array.from({ length: 8 }, (_, i) => job({ title: `Digital Marketing Staff ${i}`, company: `PT Kreatif ${i}`, fn: 'Pemasaran Internet', city: 'Kota Adm. Jakarta Selatan', province: 'DKI Jakarta' })),
+    job({ title: 'Social Media Officer', company: 'PT Sosmed', fn: 'Marketing dan Relasi Publik' }),
+    job({ title: 'Maintenance Engineer', company: 'PT Pabrik A', fn: 'Teknik, Mesin' }),
+    job({ title: 'Mechanical Engineer', company: 'PT Pabrik B', fn: 'Teknik, Mesin' }),
+    job({ title: 'Kasir', company: 'Toko C', fn: 'Operasi Ritel', edu: 'SMA atau Sederajat' })
   ];
   const r = recommend(jobs, p, { ref: NOW });
   const ids = r.groups.flatMap((g) => g.items.map((it) => it.job.id));
@@ -243,4 +243,74 @@ test('dibanding kualifikasi: pengalaman dan keahlian yang sudah/belum ada', () =
 test('domisili dari baris alamat, bukan nama jalan', () => {
   const sec = splitSections(toLines('Budi\nAlamat: Jl. Raya Bogor KM 30, Cimanggis, Depok, Jawa Barat 16452'));
   assert.deepEqual(readPlace(sec, PLACES), { city: 'Kota Depok', prov: 'Jawa Barat' });
+});
+
+const ENGLISH_STYLE = `ALEX SANTOSO
+0812 0000 1111 | alex@mail.com | linkedin.com/in/alex
+Bekasi, Jawa Barat
+Fresh graduate in Development Economics with strong interests in data and banking. Skilled in SQL and Looker Studio.
+Jenjang Pendidikan
+Universitas Contoh - Bandung, Indonesia   Aug 2020 - Jul 2024
+Bachelor of Development Economics, 3.70/4.00
+Work Experiences & Certified
+PT Bank Contoh Tbk. - Jakarta   Jan 2026 - Sekarang
+Assistant - Consumer Loan Group
+Processed and analyzed KPR records to generate business insights for the loan portfolio team, collaborating with lecturers and
+academic topics
+Built interactive dashboards in Looker Studio and automated reports using Excel VBA.
+Lembaga Riset Contoh   Sep 2025 - Dec 2025
+Jakarta, Indonesia
+Data Analyst | Internship
+Cleaned and analyzed survey data using Python and SQL.
+Pengalaman organisasi
+Himpunan Mahasiswa Ekonomi   Jan 2022 - Dec 2022
+Staff of Research
+Keterampilan, Prestasi & pengalaman lain
+Hard Skills : Microsoft Office (Excel, Word) | Data analysis (BigQuery, Tableau, Stata)
+Language: Indonesia (Fluent) | English (Intermediate)`;
+
+test('CV gaya campuran Inggris-Indonesia: judul tidak baku, nama jurusan, magang vs kerja', () => {
+  const p = read(ENGLISH_STYLE);
+  const sec = splitSections(toLines(ENGLISH_STYLE));
+  assert.ok(!sec.pendidikan.some((l) => /talk|academic topics/.test(l)), 'baris lanjutan bukan judul');
+  assert.equal(sec._found >= 4, true);
+  assert.equal(p.levelLabel, 'S1');
+  assert.equal(p.major, 'Ekonomi & Perbankan');
+  assert.equal(p.majorName, 'Ekonomi Pembangunan');
+  // Jan 2026 – Okt 2026 = 9 bulan kerja; magang Sep–Des 2025 = 3 bulan
+  assert.equal(p.months, 9);
+  assert.equal(p.internMonths, 3);
+  assert.equal(p.signals[0].id, 'data');
+  assert.ok(p.signals.some((s) => s.id === 'perbankan' && s.src.pengalaman.includes('consumer loan')));
+  assert.ok(!p.signals.some((s) => s.id === 'keuangan' && s.w >= 6), '"accurate" sebagai kata sifat tidak dihitung');
+});
+
+test('kata pendek tidak cocok dengan bentuk jamak ("css" bukan "cs"), kata panjang cocok ("dashboards")', () => {
+  const p = read('Skills\nHTML, CSS, dashboards, data analysts');
+  assert.ok(!p.terms.includes('cs'));
+  assert.ok(p.terms.includes('dashboard'));
+});
+
+test('opsi umum: posisi yang terbuka untuk banyak jurusan, sesuai jenjang, tidak dobel dengan jalur lain', () => {
+  const p = read(MAHASISWA.replace('2022 – Sekarang (Semester 7)', '2020 – 2024'));
+  const jobs = [
+    job({ title: 'Management Trainee Program', company: 'Bank A', fn: 'Management Trainee' }),
+    job({ title: 'Customer Service Staff', company: 'PT B', fn: 'Layanan Pelanggan' }),
+    job({ title: 'Staff Administrasi', company: 'PT C', fn: 'Administrasi & Customer Relationship' }),
+    job({ title: 'Senior Sales Manager', company: 'PT D', fn: 'Penjualan dan Pemasaran' }),
+    job({ title: 'Admin Mandarin', company: 'PT E', fn: 'Administrasi & Customer Relationship' }),
+    job({ title: 'Public Relations Officer', company: 'PT F', fn: 'Hubungan Masyarakat' })
+  ];
+  const r = recommend(jobs, p, { ref: NOW });
+  const umum = r.groups.find((g) => g.key === 'umum');
+  assert.ok(umum, 'ada jalur opsi umum');
+  const titles = umum.items.map((it) => it.job.title);
+  assert.ok(titles.includes('Management Trainee Program'));
+  assert.ok(titles.includes('Customer Service Staff'));
+  assert.ok(!titles.includes('Senior Sales Manager'), 'posisi senior tidak untuk fresh graduate');
+  assert.ok(!titles.includes('Admin Mandarin'), 'butuh bahasa Mandarin');
+  assert.ok(!titles.includes('Public Relations Officer'), 'sudah tampil di jalur Humas');
+  assert.match(umum.items[0].why[0], /terbuka untuk banyak jurusan/);
+  const ids = r.groups.flatMap((g) => g.items.map((it) => it.job.id));
+  assert.equal(new Set(ids).size, ids.length);
 });

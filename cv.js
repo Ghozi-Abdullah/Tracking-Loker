@@ -10,12 +10,13 @@ export const CV_VERSION = 1;
 // ind = industri yang menguatkan; tips = kata kunci umum di bidang itu (disarankan kalau belum ada di CV).
 export const CLUSTERS = [
   { id: 'keuangan', label: 'Keuangan & akuntansi',
-    terms: ['akuntansi', 'accounting', 'laporan keuangan', 'financial statement', 'financial report', 'jurnal umum', 'pembukuan', 'bookkeeping', 'bendahara', 'treasurer', 'petty cash', 'kas kecil', 'rekonsiliasi', 'reconciliation', 'accounts payable', 'accounts receivable', 'hutang piutang', 'piutang', 'faktur', 'invoice', 'invoicing', 'perpajakan', 'pajak', 'tax', 'spt', 'brevet', 'pph', 'ppn', 'e-faktur', 'accurate', 'zahir', 'myob', 'sap fico', 'audit', 'auditor', 'budgeting', 'keuangan', 'finance', 'payroll', 'penggajian', 'kasir', 'cashier', 'cash flow', 'arus kas', 'neraca', 'excel'],
+    terms: ['akuntansi', 'accounting', 'laporan keuangan', 'financial statement', 'financial report', 'jurnal umum', 'pembukuan', 'bookkeeping', 'bendahara', 'treasurer', 'petty cash', 'kas kecil', 'rekonsiliasi', 'reconciliation', 'accounts payable', 'accounts receivable', 'hutang piutang', 'piutang', 'faktur', 'invoice', 'invoicing', 'perpajakan', 'pajak', 'tax', 'taxation', 'spt', 'brevet', 'pph', 'ppn', 'e-faktur', 'zahir', 'myob', 'sap fico', 'audit', 'auditor', 'budgeting', 'keuangan', 'finance', 'payroll', 'penggajian', 'kasir', 'cashier', 'cash flow', 'arus kas', 'neraca', 'general ledger', 'financial reporting', 'financial analysis', 'analisis keuangan', 'balance sheet', 'journal entries', 'accounts', 'akuntan', 'accountant'],
+    skillTerms: ['accurate'],
     fns: ['Akuntansi & Keuangan', 'Akuntan Perpajakan', 'Audit Intern / Pengawasan', 'Keuangan, Analis', 'Penggajian dan Fasilitas'],
     kw: ['akuntan', 'accounting', 'accountant', 'finance', 'keuangan', 'pajak', 'tax', 'audit', 'auditor', 'kasir', 'cashier', 'payroll', 'bookkeeping', 'treasury', 'account payable', 'account receivable', 'billing', 'invoice', 'collection'],
     tips: ['Laporan keuangan', 'Jurnal umum', 'Rekonsiliasi', 'Perpajakan', 'Accurate', 'Excel'] },
   { id: 'perbankan', label: 'Perbankan & asuransi',
-    terms: ['perbankan', 'banking', 'teller', 'kredit', 'credit analyst', 'analis kredit', 'funding', 'lending', 'relationship officer', 'relationship manager', 'penagihan', 'collection', 'asuransi', 'insurance', 'investasi', 'investment', 'pasar modal', 'saham', 'reksa dana', 'waperd', 'aaji', 'aasi', 'kyc', 'anti pencucian uang'],
+    terms: ['perbankan', 'banking', 'bank', 'teller', 'kredit', 'credit', 'credit analyst', 'analis kredit', 'funding', 'lending', 'loan', 'loans', 'consumer loan', 'pinjaman', 'kpr', 'mortgage', 'relationship officer', 'relationship manager', 'penagihan', 'collection', 'asuransi', 'insurance', 'investasi', 'investment', 'pasar modal', 'saham', 'reksa dana', 'waperd', 'aaji', 'aasi', 'kyc', 'anti pencucian uang', 'nasabah', 'customer due diligence', 'portfolio', 'portofolio kredit', 'risk management', 'manajemen risiko', 'treasury', 'fintech'],
     fns: ['Operasi Perbankan', 'Kredit / Pinjaman', 'Investasi dan Keuangan', 'Sekuritas, Trader', 'Kolektor', 'Broker Asuransi', 'Penanggung (asuransi)', 'Bagian Klaim'],
     kw: ['bank', 'banking', 'teller', 'kredit', 'credit', 'collection', 'collector', 'relationship officer', 'relationship manager', 'funding', 'insurance', 'asuransi', 'financial advisor', 'financial planner', 'underwriter', 'claim', 'klaim'],
     ind: ['Banking & Financial Services', 'Insurance', 'Teknologi Finansial', 'Financial Technology'],
@@ -32,7 +33,7 @@ export const CLUSTERS = [
     ind: ['Media, Entertainment & Advertising'],
     tips: ['Social media', 'Content planner', 'Copywriting', 'Meta Ads', 'Google Analytics', 'SEO'] },
   { id: 'humas', label: 'Humas & komunikasi',
-    terms: ['humas', 'hubungan masyarakat', 'public relations', 'public relation', 'media relations', 'master of ceremony', 'mc', 'pembawa acara', 'moderator', 'public speaking', 'presentasi', 'presentation', 'jurnalis', 'jurnalistik', 'journalism', 'reporter', 'wartawan', 'penyiar', 'broadcaster', 'broadcasting', 'radio', 'media partner', 'press release', 'siaran pers', 'komunikasi', 'communication', 'external relations', 'hubungan eksternal', 'spokesperson', 'host', 'presenter'],
+    terms: ['humas', 'hubungan masyarakat', 'public relations', 'public relation', 'media relations', 'master of ceremony', 'mc', 'pembawa acara', 'moderator', 'public speaking', 'presentasi', 'presentation', 'jurnalis', 'jurnalistik', 'journalism', 'reporter', 'wartawan', 'penyiar', 'broadcaster', 'broadcasting', 'radio', 'media partner', 'press release', 'siaran pers', 'komunikasi', 'communication', 'external relations', 'hubungan eksternal', 'spokesperson', 'host', 'presenter', 'talk show', 'talkshow', 'stakeholder engagement', 'liaison'],
     fns: ['Hubungan Masyarakat', 'Komunikasi', 'Marketing dan Relasi Publik', 'Penyiar, TV / Radio', 'Reporter'],
     kw: ['public relation', 'humas', 'communication', 'komunikasi', 'host', 'presenter', 'mc', 'reporter', 'jurnalis', 'journalist', 'announcer', 'penyiar', 'media relation', 'corporate communication', 'event host'],
     tips: ['Public speaking', 'Press release', 'Media relations', 'Presentasi'] },
@@ -48,21 +49,21 @@ export const CLUSTERS = [
     ind: ['Media, Entertainment & Advertising', 'Printing & Publishing', 'Printing and Packaging'],
     tips: ['Adobe Photoshop', 'Adobe Illustrator', 'Figma', 'Canva', 'Portofolio'] },
   { id: 'video', label: 'Video & fotografi',
-    terms: ['video editing', 'editing video', 'video editor', 'premiere', 'adobe premiere', 'after effects', 'capcut', 'davinci resolve', 'final cut', 'videografi', 'videography', 'videografer', 'videographer', 'fotografi', 'photography', 'fotografer', 'photographer', 'lightroom', 'kamera', 'camera', 'dokumentasi', 'documentation', 'sinematografi', 'cinematography', 'motion graphic', 'motion graphics', 'animasi', 'animation', 'animator', 'youtube', 'konten video', 'reels'],
+    terms: ['video editing', 'editing video', 'video editor', 'premiere', 'adobe premiere', 'after effects', 'capcut', 'davinci resolve', 'final cut', 'videografi', 'videography', 'videografer', 'videographer', 'fotografi', 'photography', 'fotografer', 'photographer', 'lightroom', 'kamera', 'camera', 'dokumentasi', 'sinematografi', 'cinematography', 'motion graphic', 'motion graphics', 'animasi', 'animation', 'animator', 'youtube', 'konten video', 'reels'],
     fns: ['Fotografer', 'Design'],
     kw: ['video', 'videografer', 'videographer', 'video editor', 'editor video', 'fotografer', 'photographer', 'motion', 'animator', 'multimedia', 'content creator', 'konten kreator', 'cinematographer', 'youtube'],
     ind: ['Media, Entertainment & Advertising', 'Entertainment'],
     tips: ['Adobe Premiere', 'After Effects', 'CapCut', 'Lightroom', 'Portofolio'] },
   { id: 'software', label: 'Pengembangan software',
-    terms: ['programming', 'pemrograman', 'programmer', 'developer', 'software', 'web developer', 'web development', 'website', 'html', 'css', 'javascript', 'typescript', 'react', 'react.js', 'reactjs', 'next.js', 'vue', 'vue.js', 'angular', 'node.js', 'nodejs', 'express', 'php', 'laravel', 'codeigniter', 'python', 'django', 'flask', 'java', 'spring boot', 'kotlin', 'android', 'flutter', 'dart', 'swift', 'ios', 'golang', 'c++', 'c#', '.net', 'ruby', 'git', 'github', 'gitlab', 'rest api', 'restful', 'backend', 'back end', 'back-end', 'frontend', 'front end', 'front-end', 'full stack', 'fullstack', 'mobile app', 'mysql', 'postgresql', 'mongodb', 'firebase', 'database', 'basis data', 'devops', 'docker', 'kubernetes', 'aws', 'google cloud', 'azure', 'linux', 'unit testing', 'software testing', 'quality assurance', 'agile', 'scrum'],
+    terms: ['programming', 'pemrograman', 'programmer', 'developer', 'software', 'web developer', 'web development', 'website', 'html', 'css', 'javascript', 'typescript', 'react', 'react.js', 'reactjs', 'next.js', 'vue', 'vue.js', 'angular', 'node.js', 'nodejs', 'express', 'php', 'laravel', 'codeigniter', 'python', 'django', 'flask', 'java', 'spring boot', 'kotlin', 'android', 'flutter', 'dart', 'swift', 'ios', 'golang', 'c++', 'c#', '.net', 'ruby', 'git', 'github', 'gitlab', 'rest api', 'restful', 'backend', 'back end', 'back-end', 'frontend', 'front end', 'front-end', 'full stack', 'fullstack', 'mobile app', 'mysql', 'postgresql', 'mongodb', 'firebase', 'database', 'basis data', 'devops', 'docker', 'kubernetes', 'aws', 'google cloud', 'azure', 'linux', 'unit testing', 'software testing', 'quality assurance', 'agile', 'scrum', 'software engineering', 'web-based', 'web app', 'vscode', 'vs code', 'next.js', 'tailwind', 'bootstrap', 'api', 'deployment', 'deploy'],
     fns: ['IT', 'Teknik, Perangkat Lunak', 'TI, Web Developer', 'TI, Programmer', 'TI, Systems Analyst'],
     kw: ['developer', 'programmer', 'software', 'web', 'frontend', 'front end', 'backend', 'back end', 'fullstack', 'full stack', 'mobile', 'android', 'ios', 'flutter', 'devops', 'qa engineer', 'tester', 'quality assurance', 'it', 'engineer software', 'software engineer', 'system analyst', 'programer'],
     ind: ['IT & Telecommunication', 'Consultancy (IT & Technology Sciences)', 'IT / Computers-Hardware', 'Teknologi Finansial', 'Financial Technology'],
     tips: ['Git', 'REST API', 'SQL', 'JavaScript', 'Python', 'Portofolio GitHub'] },
   { id: 'data', label: 'Data & analisis',
-    terms: ['data analyst', 'analisis data', 'data analysis', 'data analytics', 'analitik data', 'pivot table', 'vlookup', 'power bi', 'tableau', 'looker studio', 'google data studio', 'statistik', 'statistika', 'statistics', 'spss', 'stata', 'eviews', 'r studio', 'rstudio', 'python', 'pandas', 'sql', 'machine learning', 'data science', 'data scientist', 'visualisasi data', 'data visualization', 'dashboard', 'big data', 'excel', 'microsoft excel', 'google sheets', 'forecasting', 'business intelligence'],
-    fns: ['Pemrosesan Data', 'Keuangan, Analis', 'Penelitian dan Manajemen Kualitas', 'IT'],
-    kw: ['data analyst', 'data scientist', 'data engineer', 'analyst', 'analis', 'business intelligence', 'reporting', 'data', 'mis', 'insight'],
+    terms: ['data analyst', 'analisis data', 'data analysis', 'data analytics', 'analitik data', 'pivot table', 'vlookup', 'power bi', 'tableau', 'looker studio', 'lookerstudio', 'looker', 'bigquery', 'google data studio', 'vba', 'excel vba', 'macro', 'regression', 'regresi', 'clustering', 'classification', 'data cleaning', 'data validation', 'data-driven', 'data driven', 'business insights', 'data processing', 'pengolahan data', 'olah data', 'kaggle', 'jupyter', 'numpy', 'matplotlib', 'etl', 'data warehouse', 'a/b testing', 'econometrics', 'ekonometrika', 'statistik', 'statistika', 'statistics', 'spss', 'stata', 'eviews', 'r studio', 'rstudio', 'python', 'pandas', 'sql', 'machine learning', 'data science', 'data scientist', 'visualisasi data', 'data visualization', 'dashboard', 'big data', 'excel', 'microsoft excel', 'google sheets', 'forecasting', 'business intelligence'],
+    fns: ['Pemrosesan Data', 'Keuangan, Analis', 'Penelitian dan Manajemen Kualitas'],
+    kw: ['data analyst', 'data analytics', 'data scientist', 'data science', 'data engineer', 'business analyst', 'business intelligence', 'reporting analyst', 'mis', 'analis data', 'analyst', 'analis', 'reporting', 'data', 'insight', 'analytics'],
     tips: ['SQL', 'Excel (pivot, VLOOKUP)', 'Power BI', 'Python', 'Visualisasi data'] },
   { id: 'jaringan', label: 'Jaringan & IT support',
     terms: ['jaringan komputer', 'jaringan', 'network', 'networking', 'mikrotik', 'cisco', 'ccna', 'mtcna', 'troubleshooting', 'instalasi jaringan', 'lan', 'wan', 'server', 'helpdesk', 'help desk', 'it support', 'teknisi komputer', 'hardware', 'perakitan komputer', 'rakit komputer', 'fiber optik', 'fiber optic', 'cctv', 'windows server', 'active directory', 'instalasi software', 'instal ulang', 'tkj'],
@@ -71,7 +72,7 @@ export const CLUSTERS = [
     ind: ['IT & Telecommunication', 'IT / Computers-Hardware'],
     tips: ['Troubleshooting', 'MikroTik', 'Instalasi jaringan', 'CCNA', 'Helpdesk'] },
   { id: 'admin', label: 'Administrasi & kesekretariatan',
-    terms: ['administrasi', 'administration', 'administrative', 'admin', 'data entry', 'input data', 'entri data', 'pengarsipan', 'arsip', 'filing', 'surat menyurat', 'korespondensi', 'notulen', 'notulensi', 'sekretaris', 'secretary', 'kesekretariatan', 'microsoft office', 'ms office', 'microsoft word', 'microsoft excel', 'excel', 'google sheets', 'google workspace', 'spreadsheet', 'powerpoint', 'mengetik', 'typing', 'inventaris', 'front office', 'resepsionis', 'receptionist', 'general affair', 'personal assistant', 'office'],
+    terms: ['administrasi', 'administrative', 'office administration', 'administrasi perkantoran', 'admin', 'data entry', 'input data', 'entri data', 'pengarsipan', 'arsip', 'filing', 'surat menyurat', 'korespondensi', 'notulen', 'notulensi', 'sekretaris', 'secretary', 'kesekretariatan', 'microsoft office', 'ms office', 'microsoft word', 'microsoft excel', 'excel', 'google sheets', 'google workspace', 'spreadsheet', 'powerpoint', 'mengetik', 'typing', 'inventaris', 'front office', 'resepsionis', 'receptionist', 'general affair', 'personal assistant', 'archiving', 'archived', 'documentation', 'record keeping', 'correspondence', 'scheduling', 'administrative assistant', 'clerical', 'microsoft word', 'word processing'],
     fns: ['Administrasi & Customer Relationship', 'Sekretaris', 'Bagian Umum', 'Resepsionis'],
     kw: ['admin', 'administrasi', 'administration', 'administrative', 'sekretaris', 'secretary', 'data entry', 'receptionist', 'resepsionis', 'general affair', 'office', 'staff administrasi', 'personal assistant', 'clerk', 'document control', 'dokumen'],
     tips: ['Microsoft Excel', 'Data entry', 'Pengarsipan', 'Surat menyurat', 'Google Workspace'] },
@@ -102,7 +103,7 @@ export const CLUSTERS = [
     kw: ['business development', 'bd', 'partnership', 'kemitraan', 'account manager', 'business analyst', 'management trainee', 'product', 'produk', 'bisnis', 'business'],
     tips: ['Business plan', 'Partnership', 'Riset pasar', 'Negosiasi', 'Pitching'] },
   { id: 'pimpin', label: 'Kepemimpinan',
-    terms: ['ketua umum', 'ketua', 'wakil ketua', 'presiden mahasiswa', 'kepala divisi', 'kadiv', 'koordinator', 'coordinator', 'team leader', 'leader', 'leadership', 'kepemimpinan', 'pemimpin', 'chairman', 'chairperson', 'head of', 'supervisor', 'lkmm', 'ldk'],
+    terms: ['ketua umum', 'ketua', 'wakil ketua', 'presiden mahasiswa', 'kepala divisi', 'kadiv', 'koordinator', 'coordinator', 'team leader', 'leader', 'leadership', 'kepemimpinan', 'pemimpin', 'chairman', 'chairperson', 'head of', 'supervisor', 'lkmm', 'ldk', 'led a team', 'led the team', 'led a', 'project leader', 'team lead', 'person in charge', 'pic', 'memimpin', 'vice head', 'vice president', 'president'],
     fns: ['Management Trainee', 'Manajemen Operasional'],
     kw: ['management trainee', 'mt', 'officer development program', 'odp', 'leader', 'supervisor', 'koordinator', 'coordinator', 'team leader', 'kepala', 'head'],
     tips: ['Leadership', 'Manajemen tim', 'Problem solving'] },
@@ -212,9 +213,9 @@ export const CLUSTERS = [
     ind: ['Apparel, Textile & Fashion', 'Beauty & Wellness', 'Shoes'],
     tips: ['Portofolio karya', 'Pengetahuan produk', 'Pelayanan pelanggan'] },
   { id: 'riset', label: 'Riset & survei',
-    terms: ['penelitian', 'research', 'riset', 'peneliti', 'researcher', 'asisten peneliti', 'research assistant', 'survei', 'survey', 'kuesioner', 'questionnaire', 'enumerator', 'focus group', 'fgd', 'publikasi ilmiah', 'jurnal ilmiah', 'literature review', 'pkm'],
+    terms: ['penelitian', 'research', 'riset', 'peneliti', 'researcher', 'asisten peneliti', 'research assistant', 'survei', 'survey', 'field survey', 'kuesioner', 'questionnaire', 'enumerator', 'focus group', 'fgd', 'publikasi ilmiah', 'jurnal ilmiah', 'literature review', 'pkm', 'data collection', 'pengumpulan data', 'studi lapangan', 'fieldwork', 'thesis', 'skripsi'],
     fns: ['Penelitian dan Manajemen Kualitas'],
-    kw: ['research', 'riset', 'researcher', 'peneliti', 'enumerator', 'surveyor', 'analyst', 'analis'],
+    kw: ['research', 'riset', 'researcher', 'research analyst', 'market research', 'peneliti', 'enumerator', 'analyst', 'analis'],
     ind: ['Consulting, Research & Legal Services', 'Science & Technology'],
     tips: ['Metodologi penelitian', 'Analisis data', 'SPSS', 'Penulisan laporan'] },
   { id: 'olahraga', label: 'Olahraga & kebugaran',
@@ -223,12 +224,12 @@ export const CLUSTERS = [
     kw: ['coach', 'pelatih', 'personal trainer', 'fitness', 'instruktur senam', 'gym', 'swimming', 'renang', 'atlet'],
     tips: ['Sertifikat pelatih', 'Program latihan', 'P3K'] },
   { id: 'keamanan', label: 'Keamanan',
-    terms: ['satpam', 'security', 'keamanan', 'gada pratama', 'gada madya', 'bela diri', 'resimen mahasiswa', 'menwa', 'patroli'],
+    terms: ['satpam', 'security guard', 'petugas keamanan', 'gada pratama', 'gada madya', 'bela diri', 'resimen mahasiswa', 'menwa', 'patroli'],
     fns: ['Satuan Pengamanan'],
     kw: ['security', 'satpam', 'keamanan', 'guard', 'scurity', 'patroli', 'bodyguard'],
     tips: ['Sertifikat Gada Pratama', 'Bela diri', 'Patroli'] },
   { id: 'properti', label: 'Properti',
-    terms: ['properti', 'property', 'real estate', 'agen properti', 'perumahan', 'kpr'],
+    terms: ['properti', 'property', 'real estate', 'agen properti', 'perumahan'],
     fns: ['Agen Real Estat', 'Manajemen Properti'],
     kw: ['property', 'properti', 'real estate', 'estate', 'perumahan', 'building management'],
     ind: ['Real Estate & Property'],
@@ -248,19 +249,28 @@ export function isStrong(s) {
 
 // ---------------------------------------------------------------- bagian CV
 const HEADINGS = {
-  pendidikan: ['pendidikan', 'riwayat pendidikan', 'pendidikan formal', 'latar belakang pendidikan', 'education', 'educational background', 'education background', 'academic background', 'academic', 'pendidikan terakhir'],
-  pengalaman: ['pengalaman kerja', 'pengalaman bekerja', 'pengalaman profesional', 'pengalaman magang', 'pengalaman', 'riwayat pekerjaan', 'riwayat kerja', 'work experience', 'working experience', 'professional experience', 'employment history', 'employment', 'experience', 'experiences', 'internship experience', 'internship', 'internships', 'magang', 'career history', 'job experience', 'riwayat pengalaman'],
-  organisasi: ['pengalaman organisasi', 'organisasi', 'riwayat organisasi', 'organizational experience', 'organization experience', 'organisational experience', 'organization', 'organizations', 'organisation', 'kepanitiaan', 'pengalaman kepanitiaan', 'volunteer', 'volunteering', 'volunteer experience', 'kegiatan', 'aktivitas', 'kegiatan kampus', 'extracurricular', 'extracurricular activities', 'ekstrakurikuler', 'leadership experience', 'leadership', 'activities', 'committee', 'committee experience', 'relawan', 'pengalaman relawan', 'kegiatan sosial'],
-  prestasi: ['prestasi', 'penghargaan', 'prestasi dan penghargaan', 'penghargaan dan prestasi', 'achievement', 'achievements', 'award', 'awards', 'honors', 'honours', 'honors and awards', 'awards and achievements', 'lomba', 'kompetisi', 'competition', 'competitions', 'kejuaraan'],
-  keahlian: ['keahlian', 'keterampilan', 'kemampuan', 'kompetensi', 'skill', 'skills', 'hard skills', 'hard skill', 'soft skills', 'soft skill', 'technical skills', 'technical skill', 'skills and interests', 'skills and abilities', 'keahlian dan kemampuan', 'bahasa', 'languages', 'language', 'tools', 'software', 'keahlian khusus', 'kemampuan bahasa'],
-  sertifikat: ['sertifikasi', 'sertifikat', 'pelatihan', 'pelatihan dan sertifikasi', 'sertifikasi dan pelatihan', 'certification', 'certifications', 'certificate', 'certificates', 'licenses', 'licenses and certifications', 'licenses & certifications', 'training', 'trainings', 'courses', 'course', 'kursus', 'seminar', 'seminar dan pelatihan', 'workshop', 'pelatihan dan seminar', 'bootcamp'],
+  pendidikan: ['pendidikan', 'riwayat pendidikan', 'pendidikan formal', 'latar belakang pendidikan', 'jenjang pendidikan', 'education', 'educational background', 'education background', 'academic background', 'academic history', 'pendidikan terakhir', 'educations'],
+  pengalaman: ['pengalaman kerja', 'pengalaman bekerja', 'pengalaman profesional', 'pengalaman magang', 'pengalaman', 'riwayat pekerjaan', 'riwayat kerja', 'work experience', 'work experiences', 'working experience', 'working experiences', 'professional experience', 'professional experiences', 'employment history', 'employment', 'experience', 'experiences', 'internship experience', 'internship experiences', 'internship', 'internships', 'magang', 'career history', 'job experience', 'riwayat pengalaman', 'work history', 'career', 'pekerjaan', 'riwayat karier', 'relevant experience', 'professional background'],
+  organisasi: ['pengalaman organisasi', 'organisasi', 'riwayat organisasi', 'organizational experience', 'organizational experiences', 'organization experience', 'organisational experience', 'organization', 'organizations', 'organisation', 'organisations', 'kepanitiaan', 'pengalaman kepanitiaan', 'volunteer', 'volunteering', 'volunteer experience', 'volunteer experiences', 'kegiatan', 'aktivitas', 'kegiatan kampus', 'extracurricular', 'extracurricular activities', 'ekstrakurikuler', 'leadership experience', 'leadership experiences', 'leadership', 'activities', 'committee', 'committee experience', 'relawan', 'pengalaman relawan', 'kegiatan sosial', 'kegiatan organisasi', 'campus involvement', 'community involvement'],
+  prestasi: ['prestasi', 'penghargaan', 'prestasi dan penghargaan', 'penghargaan dan prestasi', 'achievement', 'achievements', 'award', 'awards', 'honors', 'honours', 'honors and awards', 'awards and achievements', 'lomba', 'kompetisi', 'competition', 'competitions', 'kejuaraan', 'accomplishments'],
+  keahlian: ['keahlian', 'keterampilan', 'kemampuan', 'kompetensi', 'skill', 'skills', 'hard skills', 'hard skill', 'soft skills', 'soft skill', 'technical skills', 'technical skill', 'skills and interests', 'skills and abilities', 'keahlian dan kemampuan', 'bahasa', 'languages', 'language', 'tools', 'software', 'keahlian khusus', 'kemampuan bahasa', 'competencies', 'core competencies', 'abilities', 'expertise'],
+  sertifikat: ['sertifikasi', 'sertifikat', 'pelatihan', 'pelatihan dan sertifikasi', 'sertifikasi dan pelatihan', 'certification', 'certifications', 'certificate', 'certificates', 'licenses', 'licenses and certifications', 'licenses & certifications', 'training', 'trainings', 'courses', 'course', 'kursus', 'seminar', 'seminar dan pelatihan', 'workshop', 'pelatihan dan seminar', 'bootcamp', 'pendidikan non formal', 'pendidikan nonformal', 'non formal education'],
   proyek: ['proyek', 'project', 'projects', 'portofolio', 'portfolio', 'karya', 'pengalaman proyek', 'project experience', 'personal projects'],
-  ringkasan: ['profil', 'profil singkat', 'profil diri', 'tentang saya', 'ringkasan', 'ringkasan profil', 'summary', 'professional summary', 'profile', 'about me', 'about', 'objective', 'career objective', 'personal statement', 'deskripsi diri', 'tujuan karier'],
+  ringkasan: ['profil', 'profil singkat', 'profil diri', 'tentang saya', 'ringkasan', 'ringkasan profil', 'summary', 'professional summary', 'profile', 'about me', 'about', 'objective', 'career objective', 'personal statement', 'deskripsi diri', 'tujuan karier', 'career summary', 'professional profile'],
   kontak: ['data diri', 'data pribadi', 'informasi pribadi', 'personal information', 'personal data', 'personal details', 'contact', 'contacts', 'kontak', 'informasi kontak', 'contact information', 'biodata'],
   lain: ['referensi', 'references', 'reference', 'hobi', 'hobby', 'hobbies', 'minat', 'interests', 'interest', 'publikasi', 'publications']
 };
 const HEADING_LIST = Object.entries(HEADINGS).flatMap(([sec, names]) => names.map((n) => [n, sec])).sort((a, b) => b[0].length - a[0].length);
-
+const HEADING_EXACT = new Map(HEADING_LIST);
+// Kata pengisi di judul ("Keterampilan, Prestasi & pengalaman lain", "Jenjang Pendidikan", "Work Experiences & Certified").
+const HEAD_FILLER = new Set(['&', 'and', 'dan', 'serta', '/', 'of', 'the', 'my', 'saya', 'lain', 'lainnya', 'other', 'others', 'additional', 'tambahan',
+  'relevant', 'selected', 'key', 'jenjang', 'riwayat', 'latar', 'belakang', 'certified', 'informasi', 'information', 'umum', 'utama', 'singkat']);
+const HEAD_VOCAB = new Set(HEADING_LIST.flatMap(([n]) => n.split(' ')));
+// Baris jabatan ("Project Officer", "Training Staff") bukan judul bagian.
+const ROLE_WORDS = new Set(['staff', 'staf', 'officer', 'leader', 'lead', 'manager', 'manajer', 'coordinator', 'koordinator', 'assistant', 'asisten', 'intern',
+  'specialist', 'analyst', 'analis', 'consultant', 'designer', 'engineer', 'developer', 'head', 'ketua', 'anggota', 'member', 'supervisor', 'director',
+  'direktur', 'kepala', 'wakil', 'vice', 'sekretaris', 'bendahara', 'teacher', 'guru', 'tutor', 'admin', 'operator', 'kasir', 'driver', 'executive',
+  'trainee', 'mentor', 'instructor', 'instruktur', 'president', 'presiden', 'divisi', 'division', 'department', 'departemen', 'bidang']);
 // Bobot tiap bagian saat menghitung kekuatan bidang.
 export const SOURCE_WEIGHT = { pengalaman: 4, proyek: 2.5, organisasi: 2.5, prestasi: 2.5, keahlian: 2, sertifikat: 2, ringkasan: 1.5, pendidikan: 1, umum: 1.5, minat: 3 };
 // Label pendek (di kartu lowongan) dan label panjang (di judul jalur).
@@ -273,20 +283,39 @@ export const SOURCE_LONG = {
   keahlian: 'keahlian', sertifikat: 'sertifikat & pelatihan', ringkasan: 'profil CV', pendidikan: 'riwayat pendidikan', umum: 'isi CV', minat: 'bidang yang kamu pilih'
 };
 
-function headingOf(line) {
-  const raw = fold(line).replace(/[•●▪◦‣■□►▶✓✔·|*]/g, ' ').trim();
-  const [head] = raw.split(':');
-  const colon = line.indexOf(':');
-  const rest = colon >= 0 ? [line.slice(colon + 1)] : [];
-  const t = head.replace(/[^a-z0-9&/ ]/g, ' ').replace(/\s+/g, ' ').trim();
-  if (!t || t.length > 46) return null;
+function headingCore(text) {
+  const t = fold(text).replace(/\([^)]*\)/g, ' ').replace(/[^a-z0-9&/ ]/g, ' ').replace(/\s+/g, ' ').trim();
+  if (!t || t.length > 50) return null;
+  if (HEADING_EXACT.has(t)) return HEADING_EXACT.get(t);
+  const words = t.split(' ');
+  if (words.length > 6 || /\d/.test(t)) return null;
+  const core = words.filter((w) => !HEAD_FILLER.has(w));
+  if (!core.length || core.some((w) => ROLE_WORDS.has(w))) return null;
+  if (core.filter((w) => HEAD_VOCAB.has(w)).length / core.length < 0.5) return null;
+  // Bagian yang namanya muncul paling awal di judul ("Keterampilan, Prestasi & ..." → keahlian).
+  let best = null;
   for (const [name, sec] of HEADING_LIST) {
-    if (t === name || (t.startsWith(`${name} `) && t.split(' ').length <= name.split(' ').length + 3)) {
-      // "Pendidikan: S1 Akuntansi" → judul + isi di baris yang sama.
-      return { sec, rest: rest.join(':').trim() };
-    }
+    const m = new RegExp(`(^| )${escRe(name)}( |$)`).exec(t);
+    if (m && (!best || m.index < best.at)) best = { at: m.index, sec };
   }
-  return null;
+  return best ? best.sec : null;
+}
+
+function headingOf(line) {
+  const raw = String(line).replace(/^[•●▪◦‣■□►▶✓✔·|*\s]+/, '').trim();
+  if (!raw || raw.length > 60) return null;
+  // Lanjutan kalimat yang terpotong ("academic topics") bukan judul.
+  if (/^[a-z]/.test(raw)) return null;
+  if (/[|@]|https?:|www\./i.test(raw)) return null;
+  const colon = raw.indexOf(':');
+  if (colon > 0) {
+    // "Pendidikan: S1 Akuntansi", "Hard Skills : Excel, SQL"
+    const sec = headingCore(raw.slice(0, colon));
+    return sec ? { sec, rest: raw.slice(colon + 1).trim() } : null;
+  }
+  if (/[.,;]$/.test(raw)) return null;
+  const sec = headingCore(raw);
+  return sec ? { sec, rest: '' } : null;
 }
 
 /** Bersihkan teks hasil ekstraksi menjadi baris-baris. */
@@ -397,9 +426,24 @@ function splitColumns(items) {
 
 // ---------------------------------------------------------------- pencocokan kata
 const escRe = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Kata ≥ 4 huruf juga cocok dalam bentuk jamak bahasa Inggris ("dashboards"); kata pendek tidak ("css" bukan "cs").
 function wordRe(words) {
   const list = [...new Set(words.map((w) => fold(w)).filter(Boolean))].sort((a, b) => b.length - a.length);
-  return new RegExp(`(^|[^a-z0-9])(${list.map(escRe).join('|')})(?![a-z0-9])`, 'g');
+  const long = list.filter((w) => w.length >= 4 && /[a-z]$/.test(w));
+  const short = list.filter((w) => !(w.length >= 4 && /[a-z]$/.test(w)));
+  const alts = [];
+  if (long.length) alts.push(`(${long.map(escRe).join('|')})(?:s|es)?`);
+  else alts.push('(\\b\\B)');
+  if (short.length) alts.push(`(${short.map(escRe).join('|')})`);
+  else alts.push('(\\b\\B)');
+  return new RegExp(`(^|[^a-z0-9])(?:${alts.join('|')})(?![a-z0-9])`, 'g');
+}
+// Kata yang juga kata umum bahasa Inggris ("accurate") hanya dihitung di bagian keahlian/sertifikat.
+const SKILL_SECTIONS = new Set(['keahlian', 'sertifikat', 'proyek']);
+const skillRes = new Map();
+function skillRe(cluster) {
+  if (!skillRes.has(cluster.id)) skillRes.set(cluster.id, wordRe(cluster.skillTerms));
+  return skillRes.get(cluster.id);
 }
 const termRes = new Map();
 function termRe(cluster) {
@@ -411,7 +455,7 @@ function findAll(re, text) {
   re.lastIndex = 0;
   let m;
   while ((m = re.exec(text))) {
-    out.push(m[2]);
+    out.push(m[2] || m[3]);
     re.lastIndex = m.index + m[0].length;
   }
   return out;
@@ -425,8 +469,8 @@ function dedupeTerms(terms) {
 // ---------------------------------------------------------------- jenjang pendidikan
 const LEVELS = [
   { level: 80, label: 'S3', re: /(^|[^a-z0-9])(s3|doktoral|doktor|ph\.? ?d|doctor of philosophy)(?![a-z0-9])/ },
-  { level: 60, label: 'S2', re: /(^|[^a-z0-9])(s2|magister|master of|master's|masters|mba|m\.(sc|si|kom|pd|ak|psi|farm|ikom|ds|hum)|pascasarjana|postgraduate)(?![a-z0-9])/ },
-  { level: 50, label: 'S1', re: /(^|[^a-z0-9])(s1|s-1|sarjana|bachelor|bachelor's|strata[- ]?(1|satu|i)|undergraduate|d4|d-iv|d iv|diploma iv|diploma 4|sarjana terapan|s\.tr|s\.(e|kom|t|pd|h|sos|ak|psi|farm|ked|gz|ds|si|p|pt|hut|kel|ip|ag|hum|ikom|i\.kom|kep|keb|kes|m|stat|mat))(?![a-z0-9])/ },
+  { level: 60, label: 'S2', re: /(^|[^a-z0-9])(s2|magister|master of|master's|masters|mba|msc|m\.sc|meng|m\.eng|m\.(sc|si|kom|pd|ak|psi|farm|ikom|ds|hum)|pascasarjana|postgraduate)(?![a-z0-9])/ },
+  { level: 50, label: 'S1', re: /(^|[^a-z0-9])(s1|s-1|sarjana|bachelor|bachelors|bachelor's|strata[- ]?(1|satu|i)|undergraduate|bsc|b\.sc|bba|b\.a|b\.eng|beng|b\.comp|b\.econ|d4|d-iv|d iv|diploma iv|diploma 4|sarjana terapan|s\.tr|s\.(e|kom|t|pd|h|sos|ak|psi|farm|ked|gz|ds|si|p|pt|hut|kel|ip|ag|hum|ikom|i\.kom|kep|keb|kes|m|stat|mat))(?![a-z0-9])/ },
   { level: 40, label: 'Diploma', re: /(^|[^a-z0-9])(d3|d-iii|d iii|diploma|ahli madya|a\.md|amd|d1|d2|d-i|d-ii|associate degree|politeknik|polytechnic)(?![a-z0-9])/ },
   { level: 30, label: 'SMK', smk: true, re: /(^|[^a-z0-9])(smk|smkn|smks|stm|smea|vocational high school|vocational school|sekolah menengah kejuruan)(?![a-z0-9])/ },
   { level: 30, label: 'SMA', re: /(^|[^a-z0-9])(sma|sman|smas|smait|smu|madrasah aliyah|man \d+|senior high school|high school|sekolah menengah atas|slta|paket c)(?![a-z0-9])/ },
@@ -464,9 +508,9 @@ function readLevel(eduLines, now) {
 // ---------------------------------------------------------------- jurusan
 // Nama jurusan tambahan (termasuk bahasa Inggris) di luar daftar pencarian jurusan.
 const MAJOR_EXTRA = {
-  'Akuntansi': ['accounting', 'akuntansi syariah', 'akuntansi perpajakan', 'perpajakan', 'komputerisasi akuntansi', 'akuntansi keuangan', 'akuntansi keuangan lembaga', 'akl'],
+  'Akuntansi': ['accounting', 'accountancy', 'bachelor of accounting', 'akuntansi sektor publik', 'akuntansi syariah', 'akuntansi perpajakan', 'perpajakan', 'komputerisasi akuntansi', 'akuntansi keuangan', 'akuntansi keuangan lembaga', 'akl'],
   'Manajemen': ['management', 'manajemen bisnis', 'business administration', 'administrasi bisnis', 'business management', 'manajemen ritel', 'bisnis digital', 'digital business', 'manajemen keuangan', 'ilmu manajemen', 'bisnis manajemen'],
-  'Ekonomi & Perbankan': ['economics', 'ilmu ekonomi', 'ekonomi pembangunan', 'perbankan', 'banking', 'banking and finance', 'keuangan dan perbankan', 'perbankan syariah', 'ekonomi syariah', 'ekonomi islam', 'aktuaria', 'actuarial'],
+  'Ekonomi & Perbankan': ['economics', 'development economics', 'economic development', 'ilmu ekonomi', 'ekonomi pembangunan', 'studi pembangunan', 'economics and development studies', 'islamic economics', 'business economics', 'ekonomi bisnis', 'perbankan', 'banking', 'banking and finance', 'keuangan dan perbankan', 'perbankan syariah', 'ekonomi syariah', 'ekonomi islam', 'aktuaria', 'actuarial'],
   'Teknik Informatika': ['informatics', 'informatics engineering', 'computer science', 'information systems', 'information technology', 'sistem informasi', 'teknologi informasi', 'ilmu komputer', 'teknik komputer', 'rekayasa perangkat lunak', 'software engineering', 'data science', 'sains data', 'teknik komputer dan jaringan', 'teknik komputer jaringan', 'tkj', 'rpl', 'manajemen informatika', 'teknik informatika', 'informatika', 'sistem informasi akuntansi', 'computer engineering'],
   'Desain Komunikasi Visual': ['visual communication design', 'graphic design', 'desain grafis', 'multimedia', 'animasi', 'desain produk', 'product design', 'seni rupa', 'fine arts', 'film dan televisi', 'desain komunikasi visual', 'dkv', 'desain grafika'],
   'Ilmu Komunikasi': ['communication', 'communications', 'communication science', 'ilmu komunikasi', 'jurnalistik', 'public relations', 'hubungan masyarakat', 'penyiaran', 'broadcasting', 'komunikasi dan penyiaran islam'],
@@ -522,23 +566,88 @@ function readMajor(eduLines, allLines) {
       let x;
       while ((x = re.exec(text))) {
         const start = x.index + x[1].length;
-        hits.push({ label: m.label, term: x[2], start, end: start + x[2].length });
+        const term = x[2] || x[3];
+        hits.push({ label: m.label, term, start, end: start + term.length });
         re.lastIndex = x.index + x[0].length;
       }
     }
     for (const h of hits) {
       if (hits.some((o) => o !== h && o.label !== h.label && o.start <= h.start && o.end >= h.end && o.end - o.start > h.end - h.start)) continue;
       score.set(h.label, (score.get(h.label) || 0) + 1 + h.term.length / 20);
+      if (!names.has(h.label) || h.term.length > names.get(h.label).length) names.set(h.label, h.term);
     }
-    if (EDU_MAJOR.test(text)) score.set('Pendidikan', (score.get('Pendidikan') || 0) + 2.5);
+    const edu = EDU_MAJOR.exec(text);
+    if (edu) {
+      score.set('Pendidikan', (score.get('Pendidikan') || 0) + 2.5);
+      names.set('Pendidikan', `pendidikan ${edu[2]}`);
+    }
     return [...score.entries()].sort((a, b) => b[1] - a[1]);
   };
+  const names = new Map();
   let ranked = scan(eduLines);
   if (!ranked.length) ranked = scan(allLines.filter((l) => MAJOR_LINE.test(fold(l))));
-  if (ranked.length) return { label: ranked[0][0], also: ranked.slice(1, 2).filter(([, s]) => s >= ranked[0][1] * 0.6).map(([l]) => l) };
+  if (ranked.length) {
+    const label = ranked[0][0];
+    return { label, name: majorName(names.get(label), label), also: ranked.slice(1, 2).filter(([, s]) => s >= ranked[0][1] * 0.6).map(([l]) => l) };
+  }
   const text = fold(eduLines.concat(allLines.filter((l) => MAJOR_LINE.test(fold(l)))).join(' '));
-  const other = MAJOR_TO_CLUSTERS.find((x) => x.re.test(text));
-  return other ? { label: other.label, clusters: other.clusters } : null;
+  for (const x of MAJOR_TO_CLUSTERS) {
+    const m = x.re.exec(text);
+    if (m) return { label: x.label, name: majorName(m[2], x.label), clusters: x.clusters };
+  }
+  return null;
+}
+
+// Nama jurusan untuk ditampilkan: istilah Inggris dan singkatan SMK diterjemahkan, sisanya ditulis rapi.
+const MAJOR_NAME = {
+  'development economics': 'Ekonomi Pembangunan', 'economic development': 'Ekonomi Pembangunan', economics: 'Ilmu Ekonomi', 'islamic economics': 'Ekonomi Islam',
+  'business economics': 'Ekonomi Bisnis', accounting: 'Akuntansi', accountancy: 'Akuntansi', management: 'Manajemen', 'business administration': 'Administrasi Bisnis',
+  'business management': 'Manajemen Bisnis', informatics: 'Informatika', 'informatics engineering': 'Teknik Informatika', 'computer science': 'Ilmu Komputer',
+  'computer engineering': 'Teknik Komputer', 'information systems': 'Sistem Informasi', 'information technology': 'Teknologi Informasi',
+  'software engineering': 'Rekayasa Perangkat Lunak', 'data science': 'Sains Data', 'visual communication design': 'Desain Komunikasi Visual',
+  'graphic design': 'Desain Grafis', communication: 'Ilmu Komunikasi', communications: 'Ilmu Komunikasi', 'communication science': 'Ilmu Komunikasi',
+  'public relations': 'Hubungan Masyarakat', marketing: 'Pemasaran', 'digital marketing': 'Pemasaran Digital', 'marketing communication': 'Komunikasi Pemasaran',
+  'mechanical engineering': 'Teknik Mesin', 'electrical engineering': 'Teknik Elektro', 'civil engineering': 'Teknik Sipil', architecture: 'Arsitektur',
+  'interior design': 'Desain Interior', 'industrial engineering': 'Teknik Industri', chemistry: 'Kimia', 'chemical engineering': 'Teknik Kimia', biology: 'Biologi',
+  biotechnology: 'Bioteknologi', 'mining engineering': 'Teknik Pertambangan', geology: 'Geologi', 'geological engineering': 'Teknik Geologi',
+  'petroleum engineering': 'Teknik Perminyakan', geophysics: 'Geofisika', logistics: 'Logistik', 'supply chain management': 'Manajemen Rantai Pasok',
+  'supply chain': 'Manajemen Rantai Pasok', psychology: 'Psikologi', 'human resource management': 'Manajemen SDM', law: 'Ilmu Hukum', 'faculty of law': 'Ilmu Hukum',
+  'english literature': 'Sastra Inggris', 'english education': 'Pendidikan Bahasa Inggris', 'english language': 'Bahasa Inggris', linguistics: 'Linguistik',
+  nursing: 'Keperawatan', midwifery: 'Kebidanan', pharmacy: 'Farmasi', medicine: 'Kedokteran', dentistry: 'Kedokteran Gigi', veterinary: 'Kedokteran Hewan',
+  'public health': 'Kesehatan Masyarakat', nutrition: 'Gizi', physiotherapy: 'Fisioterapi', hospitality: 'Perhotelan', 'hotel management': 'Manajemen Perhotelan',
+  tourism: 'Pariwisata', 'culinary arts': 'Seni Kuliner', culinary: 'Kuliner', agriculture: 'Pertanian', agribusiness: 'Agribisnis', 'animal science': 'Peternakan',
+  fisheries: 'Perikanan', forestry: 'Kehutanan', 'food technology': 'Teknologi Pangan', 'office administration': 'Administrasi Perkantoran',
+  'public administration': 'Administrasi Publik', 'fashion design': 'Desain Mode', textile: 'Tekstil', 'naval architecture': 'Teknik Perkapalan', nautical: 'Nautika',
+  banking: 'Perbankan', 'banking and finance': 'Perbankan dan Keuangan', actuarial: 'Aktuaria', mathematics: 'Matematika', statistics: 'Statistika',
+  physics: 'Fisika', 'international relations': 'Hubungan Internasional', 'political science': 'Ilmu Politik', sociology: 'Sosiologi',
+  mechatronics: 'Mekatronika', 'teacher education': 'Pendidikan Guru', 'legal studies': 'Ilmu Hukum',
+  tkj: 'Teknik Komputer dan Jaringan', rpl: 'Rekayasa Perangkat Lunak', akl: 'Akuntansi Keuangan Lembaga', otkp: 'Otomatisasi dan Tata Kelola Perkantoran',
+  mplb: 'Manajemen Perkantoran dan Layanan Bisnis', bdp: 'Bisnis Daring dan Pemasaran', dkv: 'Desain Komunikasi Visual', tkr: 'Teknik Kendaraan Ringan',
+  tkro: 'Teknik Kendaraan Ringan Otomotif', tsm: 'Teknik Sepeda Motor', tbsm: 'Teknik dan Bisnis Sepeda Motor', titl: 'Teknik Instalasi Tenaga Listrik',
+  dpib: 'Desain Pemodelan dan Informasi Bangunan', upw: 'Usaha Perjalanan Wisata', ttk: 'Tenaga Teknis Kefarmasian', msdm: 'Manajemen SDM',
+  tlm: 'Teknologi Laboratorium Medis', kesmas: 'Kesehatan Masyarakat', fkip: 'Keguruan dan Ilmu Pendidikan', pgsd: 'Pendidikan Guru SD', pgpaud: 'Pendidikan Guru PAUD',
+  'pg paud': 'Pendidikan Guru PAUD', tp: 'Teknik Pemesinan', ners: 'Profesi Ners', sdm: 'Manajemen SDM', it: 'Teknologi Informasi', ti: 'Teknologi Informasi'
+};
+const LOWER_WORDS = new Set(['dan', 'and', 'of', 'in', 'di', 'the']);
+export function majorName(term, fallback = '') {
+  const t = fold(term);
+  if (!t) return fallback;
+  if (MAJOR_NAME[t]) return MAJOR_NAME[t];
+  return t.split(' ').map((w, i) => (i && LOWER_WORDS.has(w) ? w : w.charAt(0).toUpperCase() + w.slice(1))).join(' ');
+}
+
+/** Jurusan dari ketikan pengguna ("Development Economics", "Ekonomi Pembangunan", "TKJ"). */
+export function matchMajor(text) {
+  const t = fold(text);
+  if (!t) return null;
+  let best = null;
+  for (const { m, re } of majorRes) {
+    for (const term of findAll(re, t)) if (!best || term.length > best.term.length) best = { label: m.label, term };
+  }
+  if (EDU_MAJOR.test(t)) return { label: 'Pendidikan', name: majorName(t) };
+  if (best) return { label: best.label, name: best.term.length >= t.length - 2 ? majorName(best.term, best.label) : majorName(t) };
+  const exact = MAJORS.find((x) => fold(x.label) === t || x.aka.includes(t));
+  return exact ? { label: exact.label, name: majorName(t, exact.label) } : null;
 }
 
 // ---------------------------------------------------------------- domisili
@@ -643,7 +752,17 @@ function readExperience(sections, now) {
       if (!s.m && !e.m) { s.m = 1; e.m = 1; if (ey === sy) e.m = 7; } else if (!s.m) s.m = e.m; else if (!e.m) e.m = s.m;
       if (s.m > 12 || e.m > 12 || monthsBetween(s, e) < 0 || monthsBetween(s, e) > 480) continue;
       if (monthsBetween(s, e) === 0) e = { y: e.y, m: e.m + 1 };
-      const ctx = fold([lines[i - 2], lines[i - 1], line, lines[i + 1]].filter(Boolean).join(' '));
+      // Lihat baris jabatan di sekitar tanggal (sebelum atau dua baris sesudahnya), tanpa melewati entri lain.
+      const near = [line];
+      for (const k of [i - 1, i + 1, i + 2]) {
+        const l = lines[k];
+        if (!l) continue;
+        RANGE.lastIndex = 0;
+        if (RANGE.test(fold(l))) { if (k > i) break; continue; }
+        near.push(l);
+      }
+      RANGE.lastIndex = m.index + m[0].length;
+      const ctx = fold(near.join(' '));
       (INTERN.test(ctx) ? intern : work).push([s, e]);
     }
   });
@@ -667,6 +786,22 @@ export function seniorityOf(months) {
 export const SENIORITY_LABEL = { fresh: 'Fresh graduate / di bawah 1 tahun', junior: '1–3 tahun', mid: '3–7 tahun', senior: 'Lebih dari 7 tahun' };
 export const SENIORITY_MONTHS = { fresh: 0, junior: 18, mid: 48, senior: 96 };
 
+/** Bobot tiap baris: baris jabatan/tanggal ×2, entri pengalaman pertama (terbaru) ×1,4. */
+function lineWeights(sec, lines) {
+  if (!['pengalaman', 'organisasi', 'proyek'].includes(sec)) return lines.map(() => 1);
+  const isDate = (l) => { if (!l) return false; RANGE.lastIndex = 0; const r = RANGE.test(fold(l)); RANGE.lastIndex = 0; return r; };
+  let entry = -1;
+  let since = 99;
+  return lines.map((l, i) => {
+    const date = isDate(l);
+    if (date) { entry += 1; since = 0; } else since += 1;
+    const short = l.length <= 90 && !/^[a-z]/.test(l);
+    let m = date || (short && since <= 2) || (short && isDate(lines[i + 1])) ? 2 : 1;
+    if (sec === 'pengalaman' && entry <= 0) m *= 1.4;
+    return m;
+  });
+}
+
 // ---------------------------------------------------------------- profil dari teks
 /**
  * Baca teks CV menjadi profil. lines = baris teks (dari PDF/Word), places = [{city, prov}],
@@ -680,52 +815,73 @@ export function readCV(lines, places = [], now = Math.floor(Date.now() / 1000), 
   const has = (k) => (sections[k] || []).length > 0;
   const readable = words >= 60;
 
-  const edu = readLevel(sections.pendidikan && sections.pendidikan.length ? sections.pendidikan : clean, now);
+  const edu = (sections.pendidikan && sections.pendidikan.length && readLevel(sections.pendidikan, now)) || readLevel(clean, now);
   const major = readMajor(sections.pendidikan || [], clean);
   const place = readPlace(sections, places);
   const exp = readExperience(sections, now);
 
-  // Kekuatan per bidang, dihitung per bagian CV.
+  // Kekuatan per bidang, dihitung per baris di setiap bagian CV. Baris jabatan (di dekat tanggal) dihitung dua kali,
+  // dan pengalaman terbaru (entri pertama) lebih berat. Makin banyak bukti, makin kuat, tapi bertambahnya melambat.
   const srcOf = (sec) => (sec === 'atas' ? (sections._found ? 'ringkasan' : 'umum') : sec in SOURCE_WEIGHT ? sec : null);
-  const sig = new Map();
+  const raw = new Map();
   const termsAll = new Set();
   for (const [sec, secLines] of Object.entries(sections)) {
     if (sec.startsWith('_') || !Array.isArray(secLines) || !secLines.length) continue;
     const src = srcOf(sec);
-    const t = fold(secLines.join('\n'));
-    for (const c of CLUSTERS) {
-      const hits = findAll(termRe(c), t);
-      if (!hits.length) continue;
-      hits.forEach((h) => termsAll.add(h));
-      if (!src) continue;
-      const uniq = dedupeTerms(hits);
-      const s = sig.get(c.id) || { id: c.id, w: 0, src: {} };
-      const soft = SOFT.has(c.id) ? 0.55 : 1;
-      s.w += SOURCE_WEIGHT[src] * soft * (1 + 0.45 * (Math.min(uniq.length, 4) - 1));
-      s.src[src] = dedupeTerms([...(s.src[src] || []), ...uniq]).slice(0, 4);
-      sig.set(c.id, s);
-    }
+    const skillSec = SKILL_SECTIONS.has(sec);
+    const mult = lineWeights(sec, secLines);
+    secLines.forEach((line, li) => {
+      const t = fold(line);
+      for (const c of CLUSTERS) {
+        const hits = findAll(termRe(c), t);
+        if (skillSec && c.skillTerms) hits.push(...findAll(skillRe(c), t));
+        if (!hits.length) continue;
+        hits.forEach((h) => termsAll.add(h));
+        if (!src) continue;
+        const uniq = dedupeTerms(hits);
+        const r = raw.get(c.id) || { id: c.id, by: {}, src: {} };
+        r.by[src] = (r.by[src] || 0) + mult[li] * uniq.length;
+        const list = r.src[src] || [];
+        // Kata dari baris jabatan didahulukan sebagai alasan.
+        for (const h of uniq) if (!list.includes(h)) (mult[li] >= 2 ? list.unshift(h) : list.push(h));
+        r.src[src] = list;
+        raw.set(c.id, r);
+      }
+    });
   }
+  let sigList = [...raw.values()].map((r) => {
+    const soft = SOFT.has(r.id) ? 0.55 : 1;
+    const w = Object.entries(r.by).reduce((sum, [src, n]) => sum + SOURCE_WEIGHT[src] * soft * Math.log2(1 + n), 0);
+    const src = {};
+    for (const [k, list] of Object.entries(r.src)) src[k] = dedupeTerms(list).sort((a, b) => list.indexOf(a) - list.indexOf(b)).slice(0, 4);
+    return { id: r.id, w, src };
+  });
+  // Buang bukti yang terlalu tipis, lalu skala ke 0–14 supaya sebanding dengan bobot jurusan (8).
+  sigList = sigList.filter((x) => x.w >= 2);
+  const top = Math.max(0, ...sigList.map((x) => x.w));
+  if (top > 14) sigList.forEach((x) => { x.w = Math.max(1.5, x.w * 14 / top); });
   if (major && major.clusters) {
     for (const id of major.clusters) {
-      const s = sig.get(id) || { id, w: 0, src: {} };
-      s.w += 3.5;
-      s.src.jurusan = [major.label];
-      sig.set(id, s);
+      let x = sigList.find((y) => y.id === id);
+      if (!x) { x = { id, w: 0, src: {} }; sigList.push(x); }
+      x.w += 3.5;
+      x.src.jurusan = [major.name || major.label];
     }
   }
-  const signals = [...sig.values()]
-    .map((s) => ({ ...s, w: Math.round(Math.min(s.w, 14) * 10) / 10 }))
-    .filter((s) => s.w >= 2)
+  const signals = sigList
+    .map((x) => ({ ...x, w: Math.round(Math.min(x.w, 14) * 10) / 10 }))
     .sort((a, b) => b.w - a.w)
     .slice(0, 10);
 
   // Kata kunci saran yang sudah ada di CV (disimpan sebagai daftar kata saran, bukan isi CV).
   const folded = ` ${fold(text)} `;
+  const skillText = ` ${fold([...SKILL_SECTIONS].flatMap((k) => sections[k] || []).join('\n'))} `;
   const tipsHave = [];
   for (const c of CLUSTERS) {
+    const skillOnly = new Set((c.skillTerms || []).map(fold));
     for (const tip of c.tips || []) {
-      if (tipParts(tip).some((x) => new RegExp(`[^a-z0-9]${escRe(x)}[^a-z0-9]`).test(folded))) tipsHave.push(tip);
+      const hit = tipParts(tip).some((x) => new RegExp(`[^a-z0-9]${escRe(x)}[^a-z0-9]`).test(skillOnly.has(x) ? skillText : folded));
+      if (hit) tipsHave.push(tip);
     }
   }
   const email = /[\w.+-]+@[\w-]+\.[\w.]+/.test(text);
@@ -743,6 +899,7 @@ export function readCV(lines, places = [], now = Math.floor(Date.now() / 1000), 
     studying: edu ? edu.studying : false,
     smk: edu ? edu.smk : false,
     major: major && !major.clusters ? major.label : '',
+    majorName: major ? major.name || major.label : '',
     majorOther: major && major.clusters ? major.label : '',
     majorAlso: major && major.also ? major.also : [],
     prov: place ? place.prov : '',
@@ -805,14 +962,30 @@ export function keywordTips(p, limit = 3) {
 
 // ---------------------------------------------------------------- pencocokan lowongan
 const SENIOR_TITLE = /(^|[^a-z])(senior|sr|lead|head|kepala|manager|manajer|supervisor|spv|chief|direktur|director|vp|vice president|general manager|gm|principal|asisten manajer|assistant manager|koordinator|coordinator)(?![a-z])/;
+const LANG_TITLE = [
+  { re: /(^|[^a-z])(mandarin|chinese|china)(?![a-z])/, terms: ['mandarin', 'bahasa mandarin', 'chinese', 'hsk'] },
+  { re: /(^|[^a-z])(japanese|jepang|nihongo)(?![a-z])/, terms: ['japanese', 'bahasa jepang', 'jlpt'] },
+  { re: /(^|[^a-z])(korean|korea)(?![a-z])/, terms: ['korean', 'bahasa korea'] },
+  { re: /(^|[^a-z])(arabic|arab)(?![a-z])/, terms: ['arabic', 'bahasa arab'] },
+  { re: /(^|[^a-z])(german|jerman)(?![a-z])/, terms: ['german', 'bahasa jerman'] }
+];
+const FIELD_TITLE = /(^|[^a-z])(collector|collection|kolektor|penagihan|desk call|field|lapangan|canvasser|canvas|telemarketing|driver|kurir|courier|security|satpam|helper|crew|spg|spb|promotor|frontliner)(?![a-z])/;
 const JUNIOR_TITLE = /(^|[^a-z])(junior|jr|staff|staf|trainee|management trainee|fresh graduate|freshgraduate|fresh grad|entry level|magang|intern|internship|asisten|assistant|helper|crew|officer development program|odp|pemula)(?![a-z])/;
 
 // Kata judul yang terlalu umum: tetap dihitung, tapi lebih lemah dari kata yang spesifik.
 const GENERIC_KW = new Set(['it', 'data', 'web', 'mobile', 'admin', 'office', 'marketing', 'sales', 'design', 'desain', 'content', 'konten',
   'teknisi', 'technician', 'operator', 'crew', 'store', 'toko', 'analyst', 'analis', 'staff', 'product', 'produk', 'bisnis', 'business',
-  'food', 'kesehatan', 'health', 'medis', 'medical', 'visual', 'kepala', 'head', 'leader', 'supervisor', 'event', 'acara', 'quality', 'gudang']);
+  'food', 'kesehatan', 'health', 'medis', 'medical', 'visual', 'kepala', 'head', 'leader', 'supervisor', 'event', 'acara', 'quality', 'gudang',
+  'research', 'banking', 'bank', 'finance', 'keuangan', 'it', 'analytics', 'reporting', 'insight']);
 const TITLE_SKIP = new Set([...GENERIC_KW, 'excel', 'microsoft excel', 'english', 'komunikasi', 'communication', 'pelayanan', 'keuangan', 'finance',
   'administrasi', 'administration', 'host', 'mc', 'cs', 'pajak', 'tax', 'leadership', 'ketua', 'koordinator', 'coordinator']);
+
+// Wilayah aglomerasi yang lintas provinsi: orang Tangerang wajar melamar ke Jakarta.
+const METRO = [{ name: 'jabodetabek', re: /jakarta|bogor|depok|tangerang|bekasi/i, provs: ['DKI Jakarta', 'Jawa Barat', 'Banten'] }];
+export function metroOf(city, prov) {
+  const hit = METRO.find((m) => m.provs.includes(prov) && (prov === 'DKI Jakarta' || m.re.test(city || '')));
+  return hit ? hit.name : '';
+}
 
 function compileSignal(s, majorLabel) {
   let fns;
@@ -841,7 +1014,7 @@ function compileSignal(s, majorLabel) {
 /** Sinyal lengkap untuk pencocokan: jurusan (bobot terbesar) + bidang dari CV. */
 export function matchSignals(p) {
   const list = [];
-  if (p.major && MAJORS.some((m) => m.label === p.major)) list.push({ id: 'jurusan', w: 8, src: { jurusan: [p.major] } });
+  if (p.major && MAJORS.some((m) => m.label === p.major)) list.push({ id: 'jurusan', w: 8, src: { jurusan: [p.majorName || p.major] } });
   for (const also of p.majorAlso || []) {
     if (MAJORS.some((m) => m.label === also)) list.push({ id: 'jurusan', alt: also, w: 4, src: { jurusan: [also] } });
   }
@@ -855,6 +1028,8 @@ export function makeMatcher(p, opts = {}) {
   const level = p.level;
   const sen = seniorityOf(p.months);
   const sigs = matchSignals(p).map((s) => compileSignal(s, s.alt || p.major)).filter(Boolean);
+  const myMetro = metroOf(p.city, p.prov);
+  const terms = new Set(p.terms || []);
   // Kata dari CV yang muncul persis di judul lowongan ("Java", "Tax", "NOC") menaikkan peringkat.
   const own = (p.terms || []).filter((t) => t.length >= 3 && !TITLE_SKIP.has(t));
   const ownRe = own.length ? wordRe(own) : null;
@@ -892,10 +1067,15 @@ export function makeMatcher(p, opts = {}) {
       else if (jl < 0) fit *= 0.95;
       else {
         const gap = level - jl;
-        fit *= gap === 0 ? 1.15 : gap <= 10 ? 1 : gap <= 20 ? 0.7 : 0.45;
+        fit *= gap === 0 ? 1.15 : gap <= 10 ? 0.92 : gap <= 20 ? 0.7 : 0.45;
         if (p.smk && j.edu === 'SMK') fit *= 1.1;
+        // Lulusan S1 ke atas: posisi lapangan bersyarat rendah (kolektor, kurir, SPG) diturunkan.
+        if (level >= 50 && gap >= 10 && FIELD_TITLE.test(j.titleFold)) fit *= 0.75;
       }
     }
+    // Lowongan yang menuntut bahasa asing tertentu ("Admin Mandarin") diturunkan bila bahasa itu tidak ada di CV.
+    const lang = LANG_TITLE.find((x) => x.re.test(j.titleFold));
+    if (lang && !lang.terms.some((t) => terms.has(t))) fit *= 0.5;
     // Senioritas dari judul lowongan.
     const senior = SENIOR_TITLE.test(j.titleFold);
     const junior = JUNIOR_TITLE.test(j.titleFold);
@@ -904,8 +1084,12 @@ export function makeMatcher(p, opts = {}) {
     else if (sen === 'senior') fit *= senior ? 1.15 : junior ? 0.75 : 1;
     if (p.studying) fit *= intern ? 1.25 : j.type === 'Part time' ? 1.1 : 0.85;
     else if (intern && sen !== 'fresh') fit *= 0.6;
-    // Dekat domisili lebih dulu.
-    if (near && p.prov) fit *= p.city && j.city === p.city ? 1.35 : j.province === p.prov ? 1.2 : 0.85;
+    // Dekat domisili lebih dulu. Jabodetabek dihitung satu wilayah walau beda provinsi.
+    if (near && p.prov) {
+      const sameCity = p.city && j.city === p.city;
+      const sameArea = j.province === p.prov || (myMetro && metroOf(j.city, j.province) === myMetro);
+      fit *= sameCity ? 1.25 : sameArea ? 1.15 : 0.88;
+    }
     if (j.posted >= ref - 3 * 86400) fit *= 1.05;
     return { score: base * fit, parts };
   };
@@ -930,6 +1114,23 @@ export function recommend(jobs, p, opts = {}) {
     if (r) scored.push({ job: j, score: r.score, parts: r.parts });
   }
   scored.sort((a, b) => b.score - a.score);
+  // Lowongan yang sama (judul + perusahaan) di banyak kota cukup tampil sekali, yang paling cocok/dekat.
+  const seenJob = new Set();
+  for (let i = scored.length - 1; i >= 0; i--) scored[i].key = `${scored[i].job.titleFold}|${scored[i].job.company}`;
+  // Satu perusahaan paling banyak 2 lowongan, supaya rekomendasi tidak didominasi satu agen penyalur.
+  const perCompany = new Map();
+  const uniqScored = [];
+  for (const it of scored) {
+    if (seenJob.has(it.key)) continue;
+    seenJob.add(it.key);
+    const co = fold(it.job.company);
+    const n = perCompany.get(co) || 0;
+    if (n >= 2) continue;
+    perCompany.set(co, n + 1);
+    uniqScored.push(it);
+  }
+  scored.length = 0;
+  scored.push(...uniqScored);
   const cap = opts.cap || 60;
   const used = new Set();
   const groups = [];
@@ -995,10 +1196,122 @@ export function recommend(jobs, p, opts = {}) {
     const srcs = [...new Set(d.sigs.flatMap(sourcesOf))];
     const c = CLUSTER_BY_ID.get(d.key);
     const alt = d.key.startsWith('jurusan:') ? d.key.slice(8) : '';
-    const title = c ? c.label : `Sesuai jurusan ${alt || p.major}`;
+    const title = c ? c.label : `Sesuai jurusan ${alt || p.majorName || p.major}`;
     groups.push({ key: d.key, title, major: d.major || !!alt, items: items.slice(0, cap), total: items.length, sources: srcs });
   }
+  const umum = generalOptions(jobs, p, opts, used, perCompany, cap);
+  if (umum) groups.push(umum);
   return { groups, count: scored.length };
+}
+
+// ---------------------------------------------------------------- opsi umum
+// Posisi yang terbuka untuk banyak jurusan. Kemampuan yang bisa dibawa ke mana saja (komunikasi, Excel,
+// kepemimpinan) dari CV menentukan urutannya.
+export const GENERAL_ROLES = [
+  { id: 'mt', label: 'Management Trainee', phrase: 'program Management Trainee', minLevel: 40, skills: ['pimpin', 'bisnis', 'humas'],
+    re: /(^|[^a-z])(management trainee|management associate|officer development program|odp|graduate program|graduate trainee|trainee program|mt program|management development program|mdp)(?![a-z])/ },
+  { id: 'admin', label: 'Administrasi', phrase: 'posisi administrasi', skills: ['admin', 'data', 'keuangan'],
+    re: /(^|[^a-z])(admin|administrasi|administration|administrative|back office|data entry|staff umum|general affairs?|clerk|document control)(?![a-z])/ },
+  { id: 'cs', label: 'Layanan pelanggan', phrase: 'posisi layanan pelanggan', skills: ['layanan', 'humas', 'bahasa'],
+    re: /(^|[^a-z])(customer service|customer care|call center|contact center|customer relations?|frontliner|front liner|teller|customer success|customer support|cs)(?![a-z])/ },
+  { id: 'sales', label: 'Penjualan & pemasaran', phrase: 'posisi penjualan & pemasaran', skills: ['penjualan', 'pemasaran', 'humas', 'bisnis'],
+    re: /(^|[^a-z])(sales|marketing executive|marketing staff|staff marketing|account executive|account officer|business development|relationship officer|marketing officer)(?![a-z])/ },
+  { id: 'ops', label: 'Operasional', phrase: 'posisi operasional', skills: ['admin', 'logistik', 'pimpin', 'data'],
+    re: /(^|[^a-z])(staff operasional|operational staff|operations? staff|operations? officer|staff operation|admin operasional|operations? associate|operasional)(?![a-z])/ },
+  { id: 'hr', label: 'SDM', phrase: 'posisi SDM', skills: ['sdm', 'humas', 'admin'],
+    re: /(^|[^a-z])(hr generalist|hr staff|staff hr|human resources?|recruiter|recruitment|talent acquisition|hrd|hrga)(?![a-z])/ },
+  { id: 'buy', label: 'Pengadaan', phrase: 'posisi pengadaan', skills: ['logistik', 'admin', 'penjualan'],
+    re: /(^|[^a-z])(purchasing|procurement|pengadaan|buyer)(?![a-z])/ }
+];
+// Pekerjaan fisik/lapangan bukan "opsi umum" untuk semua jurusan.
+const NOT_GENERAL = /(^|[^a-z])(driver|supir|sopir|kurir|courier|security|satpam|helper|kitchen|cook|koki|waiter|waitress|steward|cleaning|cleaner|office boy|ob|sales engineer|technical sales|engineer)(?![a-z])/;
+const SOFT_SKILL_SRC = ['pengalaman', 'organisasi', 'keahlian', 'sertifikat', 'prestasi', 'proyek', 'ringkasan'];
+
+function generalOptions(jobs, p, opts, used, perCompany, cap) {
+  const level = p.level;
+  const sen = seniorityOf(p.months);
+  const near = opts.near !== false;
+  const myMetro = metroOf(p.city, p.prov);
+  const sig = new Map((p.signals || []).filter((x) => !x.off).map((x) => [x.id, x]));
+  const terms = new Set(p.terms || []);
+  const byRole = new Map();
+  const seen = new Set();
+  for (const j of jobs) {
+    if (used.has(j.id) || (opts.onlyProv && j.province !== opts.onlyProv)) continue;
+    const role = GENERAL_ROLES.find((r) => r.re.test(j.titleFold));
+    if (!role || NOT_GENERAL.test(j.titleFold)) continue;
+    if (role.minLevel && level != null && level < role.minLevel) continue;
+    const senior = SENIOR_TITLE.test(j.titleFold) && !JUNIOR_TITLE.test(j.titleFold);
+    if (senior && sen !== 'mid' && sen !== 'senior') continue;
+    // Pendidikan: hanya yang syaratnya setara atau sedikit di bawah jenjangmu.
+    let fit = 1;
+    const jl = j.eduLevel;
+    const intern = j.type === 'Magang' || /(^|[^a-z])(magang|intern|internship)(?![a-z])/.test(j.titleFold);
+    if (level != null) {
+      if (p.studying && intern) fit *= 1.2;
+      else if (jl > level) continue;
+      else if (jl >= 0 && level - jl > 10) continue;
+      else fit *= jl === level ? 1.15 : jl < 0 ? 0.9 : 0.95;
+    }
+    if (p.studying) fit *= intern ? 1.25 : 0.8;
+    else if (intern && sen !== 'fresh') fit *= 0.6;
+    if (level >= 50 && FIELD_TITLE.test(j.titleFold)) fit *= 0.75;
+    const lang = LANG_TITLE.find((x) => x.re.test(j.titleFold));
+    if (lang && !lang.terms.some((t) => terms.has(t))) continue;
+    if (near && p.prov) {
+      const sameCity = p.city && j.city === p.city;
+      const sameArea = j.province === p.prov || (myMetro && metroOf(j.city, j.province) === myMetro);
+      fit *= sameCity ? 1.25 : sameArea ? 1.15 : 0.8;
+    }
+    if (JUNIOR_TITLE.test(j.titleFold)) fit *= 1.1;
+    if (j.posted >= (opts.ref || 0) - 3 * 86400) fit *= 1.05;
+    // Kemampuan dari CV yang relevan dengan peran ini.
+    const helps = role.skills.map((id) => sig.get(id)).filter(Boolean);
+    const boost = helps.reduce((sum, x) => sum + Math.min(x.w, 14), 0);
+    const key = `${j.titleFold}|${j.company}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const list = byRole.get(role.id) || [];
+    list.push({ job: j, score: (10 + boost) * fit, role, helps });
+    byRole.set(role.id, list);
+  }
+  if (!byRole.size) return null;
+  // Gilir antar peran supaya pilihannya beragam: MT, admin, CS, sales, ...
+  const lanes = [...byRole.values()].map((l) => l.sort((a, b) => b.score - a.score))
+    .sort((a, b) => b[0].score - a[0].score);
+  const items = [];
+  let total = 0;
+  lanes.forEach((l) => { total += l.length; });
+  const at = lanes.map(() => 0);
+  while (items.length < cap) {
+    let added = false;
+    lanes.forEach((l, k) => {
+      if (items.length >= cap) return;
+      while (at[k] < l.length) {
+        const it = l[at[k]++];
+        const co = fold(it.job.company);
+        if ((perCompany.get(co) || 0) >= 2) continue;
+        perCompany.set(co, (perCompany.get(co) || 0) + 1);
+        used.add(it.job.id);
+        items.push({ ...it, parts: [], why: generalWhy(it, p) });
+        added = true;
+        break;
+      }
+    });
+    if (!added) break;
+  }
+  return items.length ? { key: 'umum', title: 'Opsi umum yang masih cocok', items, total, sources: [] } : null;
+}
+
+function generalWhy(it, p) {
+  const out = [`${it.role.phrase} yang terbuka untuk banyak jurusan`];
+  const hits = [];
+  for (const x of it.helps) {
+    for (const src of SOFT_SKILL_SRC) for (const h of (x.src && x.src[src]) || []) if (!hits.includes(h)) hits.push(h);
+  }
+  if (hits.length) out.push(`kemampuanmu: ${hits.slice(0, 3).join(', ')}`);
+  else if (p.levelLabel) out.push(`sesuai jenjang ${p.levelLabel}`);
+  return out;
 }
 
 /** Alasan singkat kenapa lowongan cocok, dari bagian CV yang paling berpengaruh. */
@@ -1025,7 +1338,7 @@ export function whyText(parts, p, fmt = (t) => t) {
     const hits = bySrc.get(src).filter((h) => !said.has(h)).slice(0, 2);
     if (src !== 'minat' && !hits.length) continue;
     hits.forEach((h) => said.add(h));
-    out.push(src === 'minat' ? 'bidang yang kamu pilih' : `${SOURCE_LABEL[src]}: ${hits.map(fmt).join(', ')}`);
+    out.push(src === 'minat' ? 'bidang yang kamu pilih' : `${SOURCE_LABEL[src]}: ${[...new Set(hits.map(fmt))].join(', ')}`);
   }
   return out;
 }
@@ -1057,6 +1370,8 @@ export function compareJob(p, job, detail = {}) {
   }
   const text = fold([detail.text || '', ...(detail.skills || [])].join('\n'));
   const found = dedupeTerms(findAll(ALL_TERMS, text));
+  // "Accurate" sebagai aplikasi akuntansi, bukan kata sifat ("accurate and detail-oriented").
+  if (/(menguasai|aplikasi|software|program|sistem|accounting|akuntansi|myob|zahir)[^.\n]{0,40}accurate|accurate\s*(online|5|accounting|desktop)|(^|\n)\s*accurate\s*($|\n|,)/.test(text) && !found.includes('accurate')) found.push('accurate');
   const have = new Set(p.terms || []);
   const covered = (t) => have.has(t) || [...have].some((h) => h.length > 3 && (h.includes(t) || t.includes(h)));
   return {
@@ -1069,6 +1384,6 @@ export function compareJob(p, job, detail = {}) {
 // ---------------------------------------------------------------- simpan
 /** Bentuk yang aman disimpan: tanpa nama, kontak, atau kalimat CV. */
 export function storable(p) {
-  const { v, at, kind, readable, words, level, levelLabel, studying, smk, major, majorOther, majorAlso, prov, city, months, internMonths, signals, terms, tipsHave, ats } = p;
-  return { v, at, kind, readable, words, level, levelLabel, studying, smk, major, majorOther, majorAlso, prov, city, months, internMonths, signals, terms, tipsHave, ats };
+  const { v, at, kind, readable, words, level, levelLabel, studying, smk, major, majorName: mName, majorOther, majorAlso, prov, city, months, internMonths, signals, terms, tipsHave, ats } = p;
+  return { v, at, kind, readable, words, level, levelLabel, studying, smk, major, majorName: mName, majorOther, majorAlso, prov, city, months, internMonths, signals, terms, tipsHave, ats };
 }

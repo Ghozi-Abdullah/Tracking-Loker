@@ -1,12 +1,12 @@
 // Tracking Loker: tampilan. Data dibaca dari jobs.json (ditulis update.py lewat GitHub Actions setiap pagi).
 import {
   decode, filterJobs, sortJobs, countBy, salaryBy, summarize, salaryText, juta, ribu, ago, dateText, timeText,
-  karirhubUrl, initials, hue, htmlToText, filtersFromQuery, filtersToQuery, activeCount, cityLabel,
+  karirhubUrl, initials, hue, htmlToText, filtersFromQuery, filtersToQuery, activeCount, cityLabel, fold,
   EMPTY_FILTERS, MAJORS, findMajor, EDU_CHOICES, EDU_SHORT, EDU_LEVEL, GAJI_CHOICES, WAKTU_CHOICES, SORTS, DIRECT, KARIRHUB_DETAIL_API
 } from './logic.js';
 import {
-  readCV, pdfLines, recommend, whyText, atsReport, keywordTips, compareJob, storable, isStrong, sourcesOf,
-  CLUSTERS, CLUSTER_BY_ID, SOURCE_LONG, SENIORITY_LABEL, SENIORITY_MONTHS, seniorityOf, CV_VERSION
+  readCV, pdfLines, recommend, whyText, atsReport, keywordTips, compareJob, storable, isStrong, sourcesOf, matchMajor,
+  CLUSTERS, CLUSTER_BY_ID, SOURCE_LONG, SENIORITY_LABEL, SENIORITY_MONTHS, seniorityOf, metroOf, CV_VERSION
 } from './cv.js';
 
 const PAGE = 30;
@@ -919,7 +919,7 @@ const LEVEL_OF = { SMP: 20, SMA: 30, SMK: 30, Diploma: 40, S1: 50, S2: 60, S3: 8
 const LEVEL_TEXT = { SMP: 'SMP', SMA: 'SMA', SMK: 'SMK', Diploma: 'Diploma (D1–D3)', S1: 'S1 / D4', S2: 'S2', S3: 'S3' };
 const ACRONYM = new Set(['sql', 'mysql', 'seo', 'sem', 'crm', 'kpi', 'k3', 'hse', 'hsse', 'qhse', 'qc', 'qa', 'ppic', 'sop', 'haccp', 'gmp', 'cpob', 'plc', 'cnc',
   'rab', 'bim', 'gis', 'iot', 'api', 'rest api', 'mtcna', 'ccna', 'toefl', 'ielts', 'toeic', 'hsk', 'jlpt', 'spss', 'pph', 'ppn', 'spt', 'str', 'bls', 'acls',
-  'btcls', 'ppgd', 'fifo', 'wms', 'b2b', 'b2c', 'kol', 'mc', 'cs', 'hrd', 'hr', 'sdm', 'umkm', 'tkj', 'kyc', 'ui/ux', 'ui ux', 'hvac', 'lan', 'wan', 'cctv', 'ttk', 'aws', 'php', 'css', 'html', 'f&b']);
+  'btcls', 'ppgd', 'fifo', 'wms', 'b2b', 'b2c', 'kol', 'mc', 'cs', 'hrd', 'hr', 'sdm', 'umkm', 'tkj', 'kyc', 'ui/ux', 'ui ux', 'hvac', 'lan', 'wan', 'cctv', 'ttk', 'aws', 'php', 'css', 'html', 'f&b', 'pic']);
 
 function loadCV() {
   try {
@@ -936,7 +936,8 @@ function storeCV() {
 
 const TERM_CASE = { pph: 'PPh', 'e-faktur': 'e-Faktur', 'node.js': 'Node.js', nodejs: 'Node.js', 'react.js': 'React.js', 'vue.js': 'Vue.js', 'next.js': 'Next.js',
   javascript: 'JavaScript', typescript: 'TypeScript', mikrotik: 'MikroTik', postgresql: 'PostgreSQL', mongodb: 'MongoDB', github: 'GitHub', gitlab: 'GitLab',
-  linkedin: 'LinkedIn', tiktok: 'TikTok', youtube: 'YouTube', capcut: 'CapCut', coreldraw: 'CorelDRAW', autocad: 'AutoCAD', sketchup: 'SketchUp', 'power bi': 'Power BI' };
+  linkedin: 'LinkedIn', tiktok: 'TikTok', youtube: 'YouTube', capcut: 'CapCut', coreldraw: 'CorelDRAW', autocad: 'AutoCAD', sketchup: 'SketchUp', 'power bi': 'Power BI',
+  archived: 'Kearsipan', archiving: 'Kearsipan', 'pengarsipan': 'Kearsipan' };
 // Nama alat/produk ditulis dengan huruf besar di awal setiap kata ("Google Analytics", "Meta Ads").
 const BRANDS = new Set(['microsoft excel', 'microsoft word', 'microsoft office', 'google sheets', 'google workspace', 'google analytics', 'google ads',
   'google cloud', 'google data studio', 'looker studio', 'meta ads', 'facebook ads', 'adobe photoshop', 'adobe illustrator', 'adobe premiere', 'adobe xd',
@@ -1039,7 +1040,7 @@ function renderCvPromo() {
   const p = state.cv;
   $('#cv-promo-title').textContent = p ? 'Rekomendasi dari CV-mu sudah siap' : 'Bingung mulai dari lowongan yang mana?';
   $('#cv-promo-sub').textContent = p
-    ? `Disesuaikan dengan ${[p.major || p.majorOther ? `jurusan ${p.major || p.majorOther}` : '', p.levelLabel, p.prov].filter(Boolean).join(', ') || 'isi CV-mu'}, dan diperbarui otomatis setiap ada lowongan baru.`
+    ? `Disesuaikan dengan ${[p.majorName || p.major || p.majorOther ? `jurusan ${p.majorName || p.major || p.majorOther}` : '', p.levelLabel, p.prov].filter(Boolean).join(', ') || 'isi CV-mu'}, dan diperbarui otomatis setiap ada lowongan baru.`
     : 'Upload CV-mu. Tracking Loker mencarikan lowongan yang cocok dengan jurusan, pengalaman, organisasi, lomba, dan keahlianmu.';
   $('#cv-promo-btn').firstChild.textContent = p ? 'Lihat rekomendasi ' : 'Cocokkan CV ';
 }
@@ -1105,7 +1106,8 @@ function profileHTML(p) {
         ${LEVEL_OF[lab] >= 40 ? `<span class="cv-check"><input type="checkbox" id="cv-study"${p.studying ? ' checked' : ''}><label for="cv-study">Masih kuliah / belum lulus</label></span>` : ''}
       </div>
       <div class="cv-field"><label for="cv-major">Jurusan</label>
-        <input class="cv-input" id="cv-major" list="majors" autocomplete="off" placeholder="mis. Akuntansi" value="${esc(p.major || p.majorOther || '')}">
+        <input class="cv-input" id="cv-major" list="majors" autocomplete="off" placeholder="mis. Akuntansi" value="${esc(p.majorName || p.major || p.majorOther || '')}">
+        <small id="cv-major-note">${esc(majorNote(p))}</small>
       </div>
       <div class="cv-field"><label for="cv-prov">Domisili</label>
         <div class="select"><select id="cv-prov"><option value="">Tidak disebut</option>${provs.map((v) => `<option${v === p.prov ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>${icon('chev')}</div>
@@ -1122,6 +1124,12 @@ function profileHTML(p) {
       <div class="select sm"><select id="cv-add" aria-label="Tambah bidang yang kamu minati"><option value="">＋ Tambah bidang yang kamu minati</option>${CLUSTERS.filter((c) => !used.has(c.id)).map((c) => `<option value="${c.id}">${esc(c.label)}</option>`).join('')}</select>${icon('chev')}</div>
     </div>
   </div>`;
+}
+
+function majorNote(p) {
+  if (p.major && p.majorName && fold(p.majorName) !== fold(p.major)) return `Dicocokkan dengan rumpun ${p.major}`;
+  if (!p.major && (p.majorOther || p.majorName)) return 'Rumpun jurusan ini belum dikenal, rekomendasi memakai pengalaman dan keahlianmu.';
+  return '';
 }
 
 function sigsHTML(p) {
@@ -1158,8 +1166,8 @@ function tipsHTML(p) {
   </div>`;
 }
 
-function whyHTML(parts) {
-  const why = whyText(parts, state.cv, prettyTerm);
+function whyHTML(parts, ready) {
+  const why = ready ? ready.map((w) => w.replace(/: (.+)$/, (m, list) => `: ${[...new Set(list.split(', ').map(prettyTerm))].join(', ')}`)) : whyText(parts, state.cv, prettyTerm);
   if (!why.length) return '';
   return `<p class="why">${icon('check')}<span><b>Cocok karena</b> ${esc(why.join(' · '))}</span></p>`;
 }
@@ -1178,7 +1186,7 @@ function renderRecs() {
   const bits = [
     p.levelLabel ? `pendidikan ${p.levelLabel}${p.studying ? ' (masih kuliah, magang diutamakan)' : ''}` : '',
     p.studying ? '' : sen === 'fresh' ? 'posisi untuk fresh graduate diutamakan' : `pengalaman ${SENIORITY_LABEL[sen].toLowerCase()}`,
-    p.prov && near !== 'all' ? (near === 'prov' ? `hanya di ${p.prov}` : `dekat ${p.prov} diutamakan`) : ''
+    p.prov && near !== 'all' ? (near === 'prov' ? `hanya di ${p.prov}` : `dekat ${metroOf(p.city, p.prov) ? 'Jabodetabek' : p.prov} diutamakan`) : ''
   ].filter(Boolean);
   const nearSel = p.prov ? `<div class="select sm"><select id="cv-near" aria-label="Lokasi">
       <option value="near"${near === 'near' ? ' selected' : ''}>Utamakan dekat domisili</option>
@@ -1196,14 +1204,15 @@ function renderRecs() {
   box.innerHTML = head + rec.groups.map((g) => {
     const shown = state.cvShown[g.key] || CV_STEP;
     const srcs = g.sources.filter((k) => !['ringkasan', 'umum', 'pendidikan'].includes(k) || g.sources.length === 1);
-    const from = srcs.map((k) => (k === 'jurusan' ? `jurusan ${p.major}` : SOURCE_LONG[k])).join(', ');
+    const from = srcs.map((k) => (k === 'jurusan' ? `jurusan ${p.majorName || p.major}` : SOURCE_LONG[k])).join(', ');
     const sub = g.key === 'top' ? 'Nyambung dengan beberapa bagian CV-mu sekaligus.'
+      : g.key === 'umum' ? 'Posisi yang terbuka untuk banyak jurusan dan sesuai jenjangmu, diurutkan dari kemampuan di CV-mu. Bisa jadi pintu masuk sambil menambah pengalaman.'
       : g.key === 'jurusan' ? 'Sesuai bidang jurusanmu, walaupun pengalamanmu ada di bidang lain.'
         : from ? `Dari ${from}.` : '';
     const rest = g.items.length - shown;
     return `<section class="cv-group${g.key === 'top' ? ' best' : ''}">
       <div class="cv-group-head"><div><h3>${esc(g.title)}</h3><p>${esc(sub)}</p></div><span class="count">${ribu(g.total)} lowongan</span></div>
-      <div class="job-list">${g.items.slice(0, shown).map((it) => cardHTML(it.job, false, whyHTML(it.parts))).join('')}</div>
+      <div class="job-list">${g.items.slice(0, shown).map((it) => cardHTML(it.job, false, whyHTML(it.parts, it.why))).join('')}</div>
       ${rest > 0 ? `<div class="more-row"><button class="btn outline sm" type="button" data-cv-more="${esc(g.key)}">Tampilkan ${Math.min(CV_STEP, rest)} lagi</button></div>` : ''}
     </section>`;
   }).join('');
@@ -1254,8 +1263,10 @@ function bindCV() {
     clearTimeout(typing);
     const v = e.target.value.trim();
     typing = setTimeout(() => {
-      const m = findMajor(v);
-      editCV({ major: m ? m.label : '', majorOther: m ? '' : v, majorAlso: [] });
+      const m = matchMajor(v);
+      editCV({ major: m ? m.label : '', majorName: m ? m.name : v, majorOther: m ? '' : v, majorAlso: [] });
+      const note = $('#cv-major-note');
+      if (note) note.textContent = majorNote(state.cv);
     }, MAJORS.some((m) => m.label === v) ? 0 : 450);
   });
   root.addEventListener('change', (e) => {
