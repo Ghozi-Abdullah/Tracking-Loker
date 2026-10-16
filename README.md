@@ -48,7 +48,7 @@ Ketik posisi, nama perusahaan, atau kota, dan hasilnya berubah saat mengetik. Sa
 Buka satu lowongan untuk melihat gaji, lokasi, syarat pendidikan, bidang, industri, tanggal posting, batas tayang, dan platform asalnya, lalu lamar lewat halaman aslinya dengan satu ketukan. Setiap lowongan juga punya tautan sendiri yang bisa dikirim ke teman.
 
 ### Pasar kerja dalam satu layar
-Halaman **Pasar** merangkum lowongan aktif, lowongan baru dalam 24 jam, jumlah perusahaan yang merekrut, dan median gaji yang dicantumkan. Lihat provinsi dan bidang dengan lowongan terbanyak, perusahaan yang paling aktif merekrut, median gaji per bidang, porsi syarat pendidikan dan tipe kerja, serta tren jumlah lowongan dari hari ke hari. Semua bisa dipersempit ke satu provinsi, dan setiap baris bisa diklik untuk langsung melihat lowongannya.
+Halaman **Pasar** merangkum lowongan aktif, lowongan baru dalam 24 jam, jumlah perusahaan yang merekrut, dan median gaji yang dicantumkan. Lihat provinsi dan bidang dengan lowongan terbanyak, perusahaan yang paling aktif merekrut, median gaji per bidang, porsi syarat pendidikan dan tipe kerja, serta tren harian: jumlah lowongan aktif, berapa yang baru masuk, dan berapa yang ditutup, bisa dilihat sebagai grafik atau tabel. Angka dan peringkatnya bisa dipersempit ke satu provinsi, dan setiap baris bisa diklik untuk langsung melihat lowongannya.
 
 ![Halaman pasar kerja Tracking Loker](layar-pasar.png)
 

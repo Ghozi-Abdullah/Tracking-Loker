@@ -400,7 +400,22 @@ function renderPasar() {
     <div class="tile kpi green"><span class="kpi-label">Perusahaan merekrut</span><span class="kpi-value">${ribu(s.companies)}</span><span class="tile-sub">rata-rata ${(s.total / Math.max(1, s.companies)).toFixed(1).replace('.', ',')} lowongan per perusahaan</span></div>
     <div class="tile kpi pink"><span class="kpi-label">Median gaji tercantum</span><span class="kpi-value">${s.medianPay ? `<small>Rp</small>${juta(s.medianPay).replace(' jt', '<small> jt</small>')}` : '–'}</span><span class="tile-sub">hanya ${s.salariedPct}% lowongan mencantumkan gaji</span></div>
 
-    <div class="tile wide trend"><div class="tile-head"><span class="tile-title">Lowongan aktif dari hari ke hari</span><span class="tile-sub">Seluruh Indonesia · garis = aktif, batang = baru terdeteksi</span></div><div id="trend"></div></div>
+    <div class="tile wide trend">
+      <div class="tile-head trend-head">
+        <div><span class="tile-title">Lowongan dari hari ke hari</span><p class="trend-sum" id="trend-sum"></p></div>
+        <div class="trend-ctrl">
+        <div class="seg" id="trend-range" role="group" aria-label="Rentang waktu" hidden>
+          <button type="button" class="on" data-trend-range="30" aria-pressed="true">30 hari</button>
+          <button type="button" data-trend-range="0" aria-pressed="false">Semua</button>
+        </div>
+        <div class="seg" role="group" aria-label="Tampilan tren">
+          <button type="button" class="on" data-trend-view="chart" aria-pressed="true">Grafik</button>
+          <button type="button" data-trend-view="table" aria-pressed="false">Tabel</button>
+        </div>
+        </div>
+      </div>
+      <div id="trend"></div>
+    </div>
 
     <div class="tile" data-tone="blue"><div class="tile-head"><span class="tile-title">${scopeProv ? 'Kota/kabupaten terbanyak' : 'Provinsi terbanyak'}</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(where)}</div>
     <div class="tile" data-tone="green"><div class="tile-head"><span class="tile-title">Bidang paling dicari</span><span class="tile-sub">jumlah lowongan</span></div>${barsHTML(fns)}</div>
@@ -453,46 +468,229 @@ function stackHTML(rows, total, kind) {
     <div class="legend">${segs.map((s) => `<button type="button" data-stack="${kind}" data-value="${esc(s.name)}"><i style="background:${s.color}"></i>${esc(s.name)} <b>${pct(s.n, total)}</b></button>`).join('')}</div>`;
 }
 
+const BULAN_PENDEK = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+const tgl = (d, year = false) => { const [y, m, dd] = d.split('-'); return `${+dd} ${BULAN_PENDEK[+m - 1]}${year ? ` ${y}` : ''}`; };
+const signed = (n) => (n > 0 ? `+${ribu(n)}` : n < 0 ? `−${ribu(-n)}` : '0');
+const C_LINE = '#1E2257';
+const C_NEW = '#2E9E62';
+const C_CLOSED = '#F27BA0';
+
+// Skala sumbu Y yang bulat: kelipatan 1, 2, 5 × 10^n, dan batas bawah/atas ikut jatuh di garis bantu.
+function yScale(min, max, count = 4) {
+  const span = Math.max(max - min, max * 0.01, 10);
+  const raw = span * 1.4 / count;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const step = [1, 2, 5, 10].map((k) => k * mag).find((v) => v >= raw);
+  const lo = Math.floor((min - span * 0.2) / step) * step;
+  const hi = Math.ceil((max + span * 0.2) / step) * step;
+  const ticks = [];
+  for (let v = lo; v <= hi + step / 2; v += step) ticks.push(Math.round(v));
+  return { lo, hi, ticks, step };
+}
+function tickText(v, step) {
+  if (step < 10) return ribu(v);
+  const dec = step >= 1000 ? 0 : step >= 100 ? 1 : 2;
+  return `${(v / 1000).toFixed(dec).replace(/(\.\d*?)0+$/, '$1').replace(/\.$/, '').replace('.', ',')} rb`;
+}
+// Label tanggal dihitung mundur dari hari terakhir supaya tanggal terbaru selalu tampil dan jaraknya rata.
+function dateMarks(n, width) {
+  const every = Math.max(1, Math.ceil(n / Math.max(2, Math.floor(width / 64))));
+  const out = [];
+  for (let i = n - 1; i >= 0; i -= every) out.push(i);
+  return out;
+}
+
+state.trendView = 'chart';
+state.trendRange = 30;
+
 function renderTrend() {
   const box = $('#trend');
   if (!box) return;
-  const days = state.days.filter((d) => d.active);
-  if (days.length < 2) {
-    box.innerHTML = `<div class="trend-empty">${emptyArt('foto-tambang.webp', 'blue')}<div><b>Grafik tren sedang tumbuh</b>Garisnya muncul setelah data terkumpul minimal 2 hari. Hari ini tercatat ${ribu(days[0]?.active || state.all.length)} lowongan aktif.</div></div>`;
+  const all = state.days.filter((d) => d.active);
+  const sum = $('#trend-sum');
+  const ranges = $('#trend-range');
+  if (all.length < 2) {
+    if (sum) sum.textContent = 'Seluruh Indonesia';
+    if (ranges) ranges.hidden = true;
+    box.innerHTML = `<div class="trend-empty">${emptyArt('foto-tambang.webp', 'blue')}<div><b>Grafik tren sedang tumbuh</b>Garisnya muncul setelah data terkumpul minimal 2 hari. Hari ini tercatat ${ribu(all[0]?.active || state.all.length)} lowongan aktif.</div></div>`;
     return;
   }
-  const W = Math.max(280, box.clientWidth);
-  const H = 200;
-  const pad = { l: 8, r: 8, t: 22, b: 24 };
+  const long = all.length > 30;
+  if (ranges) ranges.hidden = !long;
+  const days = long && state.trendRange ? all.slice(-state.trendRange) : all;
+  const first = days[0];
+  const last = days[days.length - 1];
+  const diff = last.active - first.active;
+  const pctTxt = `${(Math.abs(diff) / first.active * 100).toFixed(1).replace('.', ',')}%`;
+  if (sum) {
+    sum.innerHTML = diff === 0
+      ? `Stabil di <b>${ribu(last.active)}</b> lowongan sejak ${tgl(first.d)}. Seluruh Indonesia, dicatat setiap pagi.`
+      : `${diff > 0 ? 'Naik' : 'Turun'} <b>${ribu(Math.abs(diff))} lowongan</b> (${diff > 0 ? '+' : '−'}${pctTxt}) sejak ${tgl(first.d)}. Seluruh Indonesia, dicatat setiap pagi.`;
+  }
+  for (const b of document.querySelectorAll('[data-trend-view]')) {
+    const on = b.dataset.trendView === state.trendView;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on);
+  }
+  for (const b of document.querySelectorAll('[data-trend-range]')) {
+    const on = +b.dataset.trendRange === state.trendRange;
+    b.classList.toggle('on', on);
+    b.setAttribute('aria-pressed', on);
+  }
+
+  if (state.trendView === 'table') {
+    const rows = days.slice().reverse();
+    box.innerHTML = `<div class="trend-table-wrap"><div class="trend-table-scroll"><table class="trend-table">
+      <thead><tr><th>Tanggal</th><th>Lowongan aktif</th><th>Baru masuk</th><th>Ditutup</th><th>Selisih</th></tr></thead>
+      <tbody>${rows.map((d, i) => {
+        const prev = rows[i + 1] || all[all.indexOf(d) - 1];
+        return `<tr><td>${tgl(d.d, true)}</td><td>${ribu(d.active)}</td><td>${d.new == null ? '–' : `+${ribu(d.new)}`}</td><td>${d.closed == null ? '–' : `−${ribu(d.closed)}`}</td><td>${prev ? signed(d.active - prev.active) : '–'}</td></tr>`;
+      }).join('')}</tbody></table></div>
+      <p class="note">Baru masuk = lowongan yang belum ada di catatan sebelumnya. Ditutup = lowongan yang sudah hilang atau lewat batas waktu. Hari pertama belum punya pembanding.</p></div>`;
+    return;
+  }
+
+  box.innerHTML = `<div class="trend-grid">
+      <figure class="trend-panel" id="tp-line"><figcaption><span>Jumlah lowongan aktif</span></figcaption><div class="trend-plot"></div></figure>
+      <figure class="trend-panel" id="tp-bars"><figcaption><span>Perubahan harian</span>
+        <span class="legend-mini"><i style="background:${C_NEW}"></i>Baru masuk<i style="background:${C_CLOSED}"></i>Ditutup</span></figcaption><div class="trend-plot"></div></figure>
+    </div><div class="trend-tip" role="status" aria-live="polite" hidden></div>`;
+  drawLine(days, $('#tp-line .trend-plot'));
+  drawBars(days, $('#tp-bars .trend-plot'));
+}
+
+function trendTip(d, x, y, host) {
+  const tip = $('#trend .trend-tip');
+  if (!tip) return;
+  if (!d) { tip.hidden = true; return; }
+  tip.innerHTML = `<span class="tip-date">${tgl(d.d, true)}</span>
+    <span><b>${ribu(d.active)}</b> lowongan aktif</span>
+    ${d.new == null ? '<span class="tip-muted">Hari pertama pencatatan</span>'
+      : `<span><i style="background:${C_NEW}"></i>+${ribu(d.new)} baru masuk</span><span><i style="background:${C_CLOSED}"></i>−${ribu(d.closed)} ditutup</span>`}`;
+  tip.hidden = false;
+  const box = $('#trend').getBoundingClientRect();
+  const r = host.getBoundingClientRect();
+  let left = r.left - box.left + x + 16;
+  if (left + tip.offsetWidth > box.width) left = r.left - box.left + x - tip.offsetWidth - 16;
+  tip.style.left = `${Math.max(0, left)}px`;
+  tip.style.top = `${Math.max(0, r.top - box.top + y - tip.offsetHeight / 2)}px`;
+}
+
+// Satu lapisan sentuh untuk seluruh area grafik: arahkan kursor/jari ke mana saja, hari terdekat yang aktif.
+function hoverLayer(svg, host, n, W, H, indexAt, onShow, onHide) {
+  let cur = n - 1;
+  const show = (i) => {
+    cur = Math.max(0, Math.min(n - 1, i));
+    const [px, py] = onShow(cur);
+    trendTip(state.trendDays[cur], px * host.clientWidth / W, py * host.clientHeight / H, host);
+  };
+  const hide = () => { onHide(); trendTip(null); };
+  svg.addEventListener('pointermove', (e) => {
+    const r = svg.getBoundingClientRect();
+    show(indexAt((e.clientX - r.left) * W / r.width));
+  });
+  svg.addEventListener('pointerdown', (e) => {
+    const r = svg.getBoundingClientRect();
+    show(indexAt((e.clientX - r.left) * W / r.width));
+  });
+  svg.addEventListener('pointerleave', hide);
+  svg.addEventListener('focus', () => show(cur));
+  svg.addEventListener('blur', hide);
+  svg.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowLeft') { e.preventDefault(); show(cur - 1); }
+    if (e.key === 'ArrowRight') { e.preventDefault(); show(cur + 1); }
+    if (e.key === 'Escape') hide();
+  });
+}
+
+function drawLine(days, host) {
+  state.trendDays = days;
+  const W = Math.max(260, host.clientWidth);
+  const H = 230;
+  const pad = { l: 50, r: 18, t: 30, b: 30 };
   const vals = days.map((d) => d.active);
-  const lo = Math.min(...vals) * 0.97;
-  const hi = Math.max(...vals) * 1.01;
-  const step = (W - pad.l - pad.r) / (days.length - 1);
-  const x = (i) => pad.l + i * step;
-  const y = (v) => pad.t + (1 - (v - lo) / (hi - lo || 1)) * (H - pad.t - pad.b);
-  const news = days.map((d) => d.new || 0);
-  const maxNew = Math.max(1, ...news);
-  const barW = Math.max(3, Math.min(18, step * 0.5));
-  const line = days.map((d, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(d.active).toFixed(1)}`).join('');
-  const area = `${line}L${x(days.length - 1).toFixed(1)},${H - pad.b}L${x(0).toFixed(1)},${H - pad.b}Z`;
-  const bars = days.map((d, i) => {
-    const h = ((d.new || 0) / maxNew) * (H - pad.t - pad.b) * 0.35;
-    return `<rect x="${(x(i) - barW / 2).toFixed(1)}" y="${(H - pad.b - h).toFixed(1)}" width="${barW.toFixed(1)}" height="${h.toFixed(1)}" rx="3" fill="#FFC83D"/>`;
-  }).join('');
-  const hits = days.map((d, i) => `<rect x="${(x(i) - step / 2).toFixed(1)}" y="0" width="${step.toFixed(1)}" height="${H}" fill="transparent"><title>${d.d.split('-').reverse().join('-')}: ${ribu(d.active)} aktif${d.new != null ? `, ${ribu(d.new)} baru, ${ribu(d.closed)} ditutup` : ''}</title></rect>`).join('');
-  const lastI = days.length - 1;
-  const fmt = (d) => { const [, m, dd] = d.split('-'); return `${+dd} ${['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'][+m - 1]}`; };
-  box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Grafik lowongan aktif per hari">
-    <defs><linearGradient id="g-area" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#1E2257" stop-opacity=".12"/><stop offset="1" stop-color="#1E2257" stop-opacity="0"/></linearGradient></defs>
-    ${bars}
-    <path d="${area}" fill="url(#g-area)" stroke="none"/>
-    <path d="${line}" fill="none" stroke="#1E2257" stroke-width="2.2"/>
-    <circle cx="${x(lastI)}" cy="${y(vals[lastI])}" r="5" fill="#1E2257" stroke="#fff" stroke-width="2.5"/>
-    <text class="axis" x="${pad.l}" y="${H - 6}">${fmt(days[0].d)}</text>
-    <text class="axis" x="${W - pad.r}" y="${H - 6}" text-anchor="end">${fmt(days[lastI].d)}</text>
-    <text class="axis" x="${x(lastI) - 10}" y="${vals[lastI - 1] > vals[lastI] ? y(vals[lastI]) + 20 : Math.max(12, y(vals[lastI]) - 12)}" text-anchor="end" style="fill:#1E2257;font-weight:600">${ribu(vals[lastI])}</text>
-    ${hits}
+  const { lo, hi, ticks, step } = yScale(Math.min(...vals), Math.max(...vals));
+  const n = days.length;
+  const x = (i) => pad.l + i * (W - pad.l - pad.r) / (n - 1);
+  const y = (v) => pad.t + (1 - (v - lo) / (hi - lo)) * (H - pad.t - pad.b);
+  const line = vals.map((v, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(v).toFixed(1)}`).join('');
+  const area = `${line}L${x(n - 1).toFixed(1)},${y(lo).toFixed(1)}L${x(0).toFixed(1)},${y(lo).toFixed(1)}Z`;
+  const showDots = n <= 10;
+  const lx = x(n - 1);
+  const ly = y(vals[n - 1]);
+  const dropping = n > 1 && vals[n - 1] < vals[n - 2];
+  const marks = dateMarks(n, W - pad.l - pad.r);
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" tabindex="0" role="img" aria-label="Grafik garis jumlah lowongan aktif per hari dari ${tgl(days[0].d)} sampai ${tgl(days[n - 1].d)}. Gunakan panah kiri dan kanan untuk melihat angka tiap hari.">
+    <defs><linearGradient id="trend-wash" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C_LINE}" stop-opacity=".14"/><stop offset="1" stop-color="${C_LINE}" stop-opacity=".02"/></linearGradient></defs>
+    ${ticks.map((t) => `<line x1="${pad.l}" x2="${W - pad.r}" y1="${y(t).toFixed(1)}" y2="${y(t).toFixed(1)}" class="grid"/><text class="axis" x="${pad.l - 10}" y="${(y(t) + 4).toFixed(1)}" text-anchor="end">${tickText(t, step)}</text>`).join('')}
+    ${marks.map((i) => `<text class="axis" x="${x(i).toFixed(1)}" y="${H - 8}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${tgl(days[i].d)}</text>`).join('')}
+    <path d="${area}" fill="url(#trend-wash)"/>
+    <path d="${line}" fill="none" stroke="${C_LINE}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+    <line class="cross" x1="0" x2="0" y1="${pad.t - 10}" y2="${H - pad.b}" visibility="hidden"/>
+    ${vals.map((v, i) => (showDots || i === n - 1) ? `<circle cx="${x(i).toFixed(1)}" cy="${y(v).toFixed(1)}" r="${i === n - 1 ? 5 : 4}" fill="${C_LINE}" stroke="#FFFCF8" stroke-width="2"/>` : '').join('')}
+    <text class="val halo" x="${(lx - 4).toFixed(1)}" y="${(dropping ? ly + 22 : ly - 13).toFixed(1)}" text-anchor="end">${ribu(vals[n - 1])}</text>
+    <circle class="hot" r="7" fill="#FFFCF8" stroke="${C_LINE}" stroke-width="2.5" visibility="hidden"/>
   </svg>`;
+  const svg = host.querySelector('svg');
+  const cross = svg.querySelector('.cross');
+  const hot = svg.querySelector('.hot');
+  const stepX = (W - pad.l - pad.r) / (n - 1);
+  hoverLayer(svg, host, n, W, H, (px) => Math.round((px - pad.l) / stepX), (i) => {
+    const cx = x(i);
+    const cy = y(vals[i]);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('visibility', 'visible');
+    hot.setAttribute('cx', cx); hot.setAttribute('cy', cy); hot.setAttribute('visibility', 'visible');
+    return [cx, cy];
+  }, () => { cross.setAttribute('visibility', 'hidden'); hot.setAttribute('visibility', 'hidden'); });
+}
+
+function drawBars(days, host) {
+  const W = Math.max(240, host.clientWidth);
+  const H = 230;
+  const pad = { l: 10, r: 10, t: 30, b: 30 };
+  const n = days.length;
+  const label = n <= 7;
+  const up = Math.max(1, ...days.map((d) => d.new || 0));
+  const down = Math.max(1, ...days.map((d) => d.closed || 0));
+  const plotH = H - pad.t - pad.b - (label ? 20 : 4);
+  const zero = pad.t + plotH * up / (up + down);
+  const scale = plotH / (up + down);
+  const band = (W - pad.l - pad.r) / n;
+  const bw = band >= 8 ? Math.min(24, band * 0.5) : Math.max(1, band - 1);
+  const gap = 2;
+  const r = Math.min(4, bw / 2);
+  const cx = (i) => pad.l + band * (i + 0.5);
+  const cols = days.map((d, i) => {
+    const c = cx(i);
+    if (d.new == null) {
+      return band >= 72 ? `<text class="axis" x="${c.toFixed(1)}" y="${(zero - 8).toFixed(1)}" text-anchor="middle">belum ada</text><text class="axis" x="${c.toFixed(1)}" y="${(zero + 16).toFixed(1)}" text-anchor="middle">pembanding</text>` : '';
+    }
+    const hu = Math.max(1.5, d.new * scale);
+    const hd = Math.max(1.5, d.closed * scale);
+    const rr = Math.min(r, hu, hd);
+    // ujung data membulat, sisi yang menempel garis nol tetap rata
+    const top = zero - gap / 2;
+    const bot = zero + gap / 2;
+    const l = c - bw / 2;
+    const upPath = `M${l},${top}V${top - hu + rr}a${rr},${rr} 0 0 1 ${rr},-${rr}H${l + bw - rr}a${rr},${rr} 0 0 1 ${rr},${rr}V${top}Z`;
+    const dnPath = `M${l},${bot}V${bot + hd - rr}a${rr},${rr} 0 0 0 ${rr},${rr}H${l + bw - rr}a${rr},${rr} 0 0 0 ${rr},-${rr}V${bot}Z`;
+    return `<g class="col" data-i="${i}"><path d="${upPath}" fill="${C_NEW}"/><path d="${dnPath}" fill="${C_CLOSED}"/>
+      ${label ? `<text class="val sm" x="${c.toFixed(1)}" y="${(top - hu - 7).toFixed(1)}" text-anchor="middle">+${ribu(d.new)}</text>
+      <text class="val sm" x="${c.toFixed(1)}" y="${(bot + hd + 15).toFixed(1)}" text-anchor="middle">−${ribu(d.closed)}</text>` : ''}</g>`;
+  }).join('');
+  const marks = dateMarks(n, W - pad.l - pad.r);
+  host.innerHTML = `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" tabindex="0" role="img" aria-label="Grafik batang lowongan baru masuk (ke atas) dan ditutup (ke bawah) per hari. Gunakan panah kiri dan kanan untuk melihat angka tiap hari.">
+    <rect class="band-hi" x="0" y="${pad.t - 12}" width="${band.toFixed(1)}" height="${H - pad.t - pad.b + 12}" rx="8" visibility="hidden"/>
+    <line x1="${pad.l}" x2="${W - pad.r}" y1="${zero}" y2="${zero}" class="base"/>
+    ${cols}
+    ${marks.map((i) => `<text class="axis" x="${cx(i).toFixed(1)}" y="${H - 8}" text-anchor="${n > 7 && i === n - 1 ? 'end' : 'middle'}">${tgl(days[i].d)}</text>`).join('')}
+  </svg>`;
+  const svg = host.querySelector('svg');
+  const hi = svg.querySelector('.band-hi');
+  hoverLayer(svg, host, n, W, H, (px) => Math.floor((px - pad.l) / band), (i) => {
+    hi.setAttribute('x', (cx(i) - band / 2).toFixed(1)); hi.setAttribute('visibility', 'visible');
+    return [cx(i), zero];
+  }, () => hi.setAttribute('visibility', 'hidden'));
 }
 
 // ---------------------------------------------------------------- simpanan
@@ -787,6 +985,10 @@ function bindEvents() {
     const unset = t.closest('[data-unset]');
     if (unset) { setFilters($('#active-chips')._patches[+unset.dataset.unset], false); return; }
     if (t.closest('[data-reset]')) { state.f = { ...EMPTY_FILTERS, types: [] }; apply(false); return; }
+    const tv = t.closest('[data-trend-view]');
+    if (tv) { state.trendView = tv.dataset.trendView; renderTrend(); return; }
+    const tr = t.closest('[data-trend-range]');
+    if (tr) { state.trendRange = +tr.dataset.trendRange; renderTrend(); return; }
     const mood = t.closest('[data-mood]');
     if (mood) {
       state.f = { ...EMPTY_FILTERS, types: [], q: state.f.q, jur: state.f.jur, prov: state.f.prov, city: state.f.city, ...JSON.parse(mood.dataset.mood) };
