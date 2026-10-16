@@ -4,6 +4,10 @@ import {
   karirhubUrl, initials, hue, htmlToText, filtersFromQuery, filtersToQuery, activeCount, cityLabel,
   EMPTY_FILTERS, MAJORS, findMajor, EDU_CHOICES, EDU_SHORT, EDU_LEVEL, GAJI_CHOICES, WAKTU_CHOICES, SORTS, DIRECT, KARIRHUB_DETAIL_API
 } from './logic.js';
+import {
+  readCV, pdfLines, recommend, whyText, atsReport, keywordTips, compareJob, storable, isStrong, sourcesOf,
+  CLUSTERS, CLUSTER_BY_ID, SOURCE_LONG, SENIORITY_LABEL, SENIORITY_MONTHS, seniorityOf, CV_VERSION
+} from './cv.js';
 
 const PAGE = 30;
 
@@ -39,6 +43,8 @@ function emptyArt(img, tone = '') {
 }
 // Kunci lama dipertahankan supaya lowongan yang sudah disimpan pengguna tidak hilang.
 const SAVED_KEY = 'loker-radar:saved';
+// Ringkasan CV (bukan isi CV) untuk fitur Cocokkan CV.
+const CV_KEY = 'loker-radar:cv';
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -60,8 +66,15 @@ const state = {
   openId: '',
   saved: loadSaved(),
   links: null,
-  loaded: false
+  loaded: false,
+  cv: loadCV(),
+  cvBusy: '',
+  cvError: '',
+  cvShown: {},
+  cvNear: 'near'
 };
+let markReady;
+const dataReady = new Promise((resolve) => { markReady = resolve; });
 
 // ---------------------------------------------------------------- data
 
@@ -89,13 +102,17 @@ async function boot() {
     state.loaded = true;
   } catch (err) {
     console.error(err);
+    markReady();
     $('#updated').textContent = 'Data gagal dimuat';
     $('#job-list').innerHTML = `<div class="empty"><b>Data belum bisa dimuat</b><p>Periksa koneksi internet lalu muat ulang halaman.</p><button class="btn dark" type="button" onclick="location.reload()">Muat ulang</button></div>`;
     return;
   }
+  markReady();
   renderMeta();
   renderMoods();
   renderCheer();
+  renderCvPromo();
+  if (state.view === 'cv') renderCV();
   apply(false);
   const id = new URLSearchParams(location.search).get('id');
   if (id) openJob(id);
@@ -282,7 +299,7 @@ function place(job) {
   return cityLabel(job.city) || job.province || 'Indonesia';
 }
 
-function cardHTML(job, closed = false) {
+function cardHTML(job, closed = false, extra = '') {
   const isNew = !closed && job.posted >= state.ref - 86400;
   const pay = salaryText(job.smin, job.smax);
   const saved = state.saved.some((s) => s.id === job.id);
@@ -302,7 +319,7 @@ function cardHTML(job, closed = false) {
       </div>
       <button type="button" class="save${saved ? ' on' : ''}" data-save="${esc(job.id)}" aria-label="${saved ? 'Hapus dari simpanan' : 'Simpan lowongan'}" aria-pressed="${saved}">${icon('bookmark')}</button>
     </div>
-    <div class="job-tags">${tags}</div>
+    <div class="job-tags">${tags}</div>${extra}
     <div class="job-foot">
       <span class="pay${pay ? '' : ' none'}">${pay || 'Gaji tidak dicantumkan'}</span>
       <span class="when"><b>${esc(ago(job.posted, nowSec()))}</b>${esc(job.platform)}</span>
@@ -783,6 +800,7 @@ function openJob(id) {
     ${closed ? '<div class="warn-box">Lowongan ini sudah tidak muncul di sumbernya, kemungkinan sudah ditutup.</div>' : ''}
     <div class="d-pay${pay ? '' : ' none'}"><b>${pay || 'Gaji tidak dicantumkan'}</b>${pay ? '<span>per bulan</span>' : ''}</div>
     <div class="facts">${facts.map(([k, v]) => `<div class="fact"><span>${k}</span><b>${esc(v)}</b></div>`).join('')}</div>
+    ${state.cv ? '<div class="cv-compare" id="d-cv"></div>' : ''}
     <div class="d-section" id="d-detail">${job.via === 'karirhub' ? '<div class="d-load"></div>' : `<p class="d-text">Deskripsi lengkap dan formulir lamaran ada di situs karier ${esc(job.company)}.</p>`}</div>
     ${closed ? '' : `<div class="cheer-note">${icon('heart')}<span>Semoga lolos! Baca lagi kualifikasinya dan sesuaikan CV-mu sebelum melamar.</span></div>`}
     <div class="warn-box">Lowongan resmi tidak memungut biaya apa pun. Waspadai permintaan transfer uang, biaya pelatihan, atau seragam.</div>
@@ -795,6 +813,7 @@ function openJob(id) {
   document.body.classList.add('lock');
   $('#drawer').focus({ preventScroll: true });
 
+  renderCompare(job, job.via === 'karirhub' ? null : {});
   applyLink(job);
   if (job.via === 'karirhub') loadDetail(job);
 }
@@ -838,6 +857,7 @@ async function loadDetail(job) {
     const skills = (d.skills || []).map((s) => (typeof s === 'string' ? s : s && s.name)).filter(Boolean);
     if (skills.length) req.push(`Keterampilan: ${skills.join(', ')}`);
     const addr = d.employer && d.employer.address;
+    renderCompare(job, { minYears: d.min_year_experience == null ? null : +d.min_year_experience, text: [desc, qual].join('\n'), skills });
     box.innerHTML = [
       desc && `<h3>Deskripsi pekerjaan</h3><p class="d-text clamp" id="d-desc">${esc(desc)}</p>`,
       qual && `<h3 style="margin-top:8px">Kualifikasi</h3><p class="d-text">${esc(qual)}</p>`,
@@ -855,6 +875,7 @@ async function loadDetail(job) {
     }
   } catch {
     if (state.openId !== job.id) return;
+    renderCompare(job, {});
     box.innerHTML = '<p class="d-text">Deskripsi lengkap dan syarat melamar ada di halaman lowongan aslinya.</p>';
   } finally {
     clearTimeout(timer);
@@ -887,11 +908,432 @@ async function share() {
   } catch { /* dibatalkan */ }
 }
 
+// ---------------------------------------------------------------- Cocokkan CV
+// CV dibaca di perangkat ini. Yang disimpan hanya ringkasan (lihat storable di cv.js), bukan file atau isi CV.
+const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.624/legacy/build/pdf.min.mjs';
+const PDFJS_WORKER = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@5.4.624/legacy/build/pdf.worker.min.mjs';
+const MAMMOTH = 'https://cdn.jsdelivr.net/npm/mammoth@1.12.3/mammoth.browser.min.js';
+const CV_MAX = 10 * 1024 * 1024;
+const CV_STEP = 6;
+const LEVEL_OF = { SMP: 20, SMA: 30, SMK: 30, Diploma: 40, S1: 50, S2: 60, S3: 80 };
+const LEVEL_TEXT = { SMP: 'SMP', SMA: 'SMA', SMK: 'SMK', Diploma: 'Diploma (D1–D3)', S1: 'S1 / D4', S2: 'S2', S3: 'S3' };
+const ACRONYM = new Set(['sql', 'mysql', 'seo', 'sem', 'crm', 'kpi', 'k3', 'hse', 'hsse', 'qhse', 'qc', 'qa', 'ppic', 'sop', 'haccp', 'gmp', 'cpob', 'plc', 'cnc',
+  'rab', 'bim', 'gis', 'iot', 'api', 'rest api', 'mtcna', 'ccna', 'toefl', 'ielts', 'toeic', 'hsk', 'jlpt', 'spss', 'pph', 'ppn', 'spt', 'str', 'bls', 'acls',
+  'btcls', 'ppgd', 'fifo', 'wms', 'b2b', 'b2c', 'kol', 'mc', 'cs', 'hrd', 'hr', 'sdm', 'umkm', 'tkj', 'kyc', 'ui/ux', 'ui ux', 'hvac', 'lan', 'wan', 'cctv', 'ttk', 'aws', 'php', 'css', 'html', 'f&b']);
+
+function loadCV() {
+  try {
+    const p = JSON.parse(localStorage.getItem(CV_KEY) || 'null');
+    return p && p.v === CV_VERSION ? p : null;
+  } catch { return null; }
+}
+function storeCV() {
+  try {
+    if (state.cv) localStorage.setItem(CV_KEY, JSON.stringify(storable(state.cv)));
+    else localStorage.removeItem(CV_KEY);
+  } catch { /* mode privat: profil hanya bertahan sampai halaman ditutup */ }
+}
+
+const TERM_CASE = { pph: 'PPh', 'e-faktur': 'e-Faktur', 'node.js': 'Node.js', nodejs: 'Node.js', 'react.js': 'React.js', 'vue.js': 'Vue.js', 'next.js': 'Next.js',
+  javascript: 'JavaScript', typescript: 'TypeScript', mikrotik: 'MikroTik', postgresql: 'PostgreSQL', mongodb: 'MongoDB', github: 'GitHub', gitlab: 'GitLab',
+  linkedin: 'LinkedIn', tiktok: 'TikTok', youtube: 'YouTube', capcut: 'CapCut', coreldraw: 'CorelDRAW', autocad: 'AutoCAD', sketchup: 'SketchUp', 'power bi': 'Power BI' };
+// Nama alat/produk ditulis dengan huruf besar di awal setiap kata ("Google Analytics", "Meta Ads").
+const BRANDS = new Set(['microsoft excel', 'microsoft word', 'microsoft office', 'google sheets', 'google workspace', 'google analytics', 'google ads',
+  'google cloud', 'google data studio', 'looker studio', 'meta ads', 'facebook ads', 'adobe photoshop', 'adobe illustrator', 'adobe premiere', 'adobe xd',
+  'after effects', 'davinci resolve', 'final cut', 'canva', 'figma', 'photoshop', 'illustrator', 'premiere', 'lightroom', 'indesign', 'accurate', 'zahir',
+  'instagram', 'shopee', 'tokopedia', 'laravel', 'codeigniter', 'python', 'java', 'kotlin', 'flutter', 'react', 'docker', 'kubernetes', 'linux', 'excel',
+  'powerpoint', 'tableau', 'stata', 'eviews', 'django', 'flask', 'express', 'firebase', 'android', 'swift', 'golang', 'ruby', 'git', 'cisco', 'arduino',
+  'solidworks', 'catia', 'revit', 'lumion', 'etabs', 'sap2000', 'arcgis', 'qgis', 'surpac', 'minescape', 'scrum', 'agile', 'windows server', 'active directory']);
+function prettyTerm(t) {
+  if (TERM_CASE[t]) return TERM_CASE[t];
+  if (BRANDS.has(t)) return t.replace(/(^|\s)(\p{L})/gu, (m, a, b) => a + b.toUpperCase());
+  if (ACRONYM.has(t)) return t.toUpperCase();
+  return t.replace(/(^|[\s/(])(\p{L})/u, (m, a, b) => a + b.toUpperCase());
+}
+
+function placesList() {
+  const map = new Map();
+  for (const j of state.all) if (j.city && !map.has(j.city)) map.set(j.city, { city: j.city, prov: j.province });
+  return [...map.values()];
+}
+
+function loadScript(src) {
+  return new Promise((resolve, reject) => {
+    const el = document.createElement('script');
+    el.src = src;
+    el.onload = resolve;
+    el.onerror = () => reject(new Error('lib'));
+    document.head.appendChild(el);
+  });
+}
+
+async function readPdf(buf) {
+  let pdfjs;
+  try {
+    pdfjs = await import(PDFJS);
+  } catch {
+    throw new Error('lib');
+  }
+  pdfjs.GlobalWorkerOptions.workerSrc = PDFJS_WORKER;
+  const doc = await pdfjs.getDocument({ data: new Uint8Array(buf), isEvalSupported: false, disableFontFace: true }).promise;
+  const pages = [];
+  for (let i = 1; i <= Math.min(doc.numPages, 8); i++) {
+    const page = await doc.getPage(i);
+    const tc = await page.getTextContent();
+    pages.push(tc.items.filter((it) => 'str' in it).map((it) => ({
+      str: it.str, x: it.transform[4], y: it.transform[5], w: it.width, h: it.height || Math.abs(it.transform[3])
+    })));
+  }
+  const { lines, twoCol } = pdfLines(pages);
+  doc.destroy();
+  return { lines, pages: doc.numPages, twoCol, kind: 'PDF' };
+}
+
+async function readDocx(buf) {
+  if (!window.mammoth) await loadScript(MAMMOTH);
+  const r = await window.mammoth.extractRawText({ arrayBuffer: buf });
+  return { lines: String(r.value || '').split('\n'), pages: 0, twoCol: false, kind: 'Word' };
+}
+
+function cvFail(msg) {
+  state.cvError = msg;
+  state.cvBusy = '';
+  renderCV();
+}
+
+async function handleCVFile(file) {
+  if (!file) return;
+  const ext = (String(file.name || '').split('.').pop() || '').toLowerCase();
+  state.cvError = '';
+  if (ext === 'doc') return cvFail('File .doc versi lama belum bisa dibaca. Simpan ulang CV-mu sebagai PDF atau .docx, lalu upload lagi.');
+  const kind = ext === 'docx' || /wordprocessingml/.test(file.type) ? 'docx' : ext === 'txt' || file.type === 'text/plain' ? 'txt' : ext === 'pdf' || file.type === 'application/pdf' ? 'pdf' : '';
+  if (!kind) return cvFail('Format file belum didukung. Gunakan CV dalam bentuk PDF atau Word (.docx).');
+  if (file.size > CV_MAX) return cvFail('Ukuran file lebih dari 10 MB. Coba simpan ulang CV-mu sebagai PDF yang lebih kecil.');
+  state.cvBusy = file.name || 'CV';
+  if (state.view !== 'cv') location.hash = 'cv';
+  renderCV();
+  try {
+    const buf = await file.arrayBuffer();
+    const got = kind === 'pdf' ? await readPdf(buf) : kind === 'docx' ? await readDocx(buf)
+      : { lines: new TextDecoder().decode(buf).split('\n'), pages: 0, twoCol: false, kind: 'Teks' };
+    await dataReady;
+    state.cv = readCV(got.lines, placesList(), nowSec(), got);
+    state.cvShown = {};
+    state.cvNear = state.cv.prov ? 'near' : 'all';
+    storeCV();
+  } catch (err) {
+    console.error(err);
+    state.cvError = err && err.name === 'PasswordException' ? 'CV-mu dikunci kata sandi. Buka kuncinya dulu, lalu upload lagi.'
+      : err && err.message === 'lib' ? 'Pembaca file gagal dimuat. Periksa koneksi internet lalu coba lagi.'
+        : 'CV-mu belum bisa dibaca. Pastikan filenya tidak rusak, atau coba simpan ulang sebagai PDF.';
+  } finally {
+    state.cvBusy = '';
+    $('#cv-file').value = '';
+    renderCV();
+    renderCvPromo();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function renderCvPromo() {
+  const p = state.cv;
+  $('#cv-promo-title').textContent = p ? 'Rekomendasi dari CV-mu sudah siap' : 'Bingung mulai dari lowongan yang mana?';
+  $('#cv-promo-sub').textContent = p
+    ? `Disesuaikan dengan ${[p.major || p.majorOther ? `jurusan ${p.major || p.majorOther}` : '', p.levelLabel, p.prov].filter(Boolean).join(', ') || 'isi CV-mu'}, dan diperbarui otomatis setiap ada lowongan baru.`
+    : 'Upload CV-mu. Tracking Loker mencarikan lowongan yang cocok dengan jurusan, pengalaman, organisasi, lomba, dan keahlianmu.';
+  $('#cv-promo-btn').firstChild.textContent = p ? 'Lihat rekomendasi ' : 'Cocokkan CV ';
+}
+
+function renderCV() {
+  const root = $('#cv-root');
+  if (!root) return;
+  if (state.cvBusy) {
+    root.innerHTML = `<div class="cv-drop busy" aria-live="polite"><span class="spinner" aria-hidden="true"></span><b>Membaca CV-mu…</b><p>${esc(state.cvBusy)}</p></div>`;
+    return;
+  }
+  if (!state.cv) {
+    root.innerHTML = `
+      <div class="cv-drop" data-cv-pick tabindex="0" role="button" aria-label="Pilih file CV">
+        ${emptyArt('foto-cv.webp', 'yellow')}
+        <b>Pilih atau taruh file CV di sini</b>
+        <p>PDF atau Word (.docx), maksimal 10 MB.</p>
+        <span class="btn cta">Pilih file CV <span class="cta-dot">${icon('upload')}</span></span>
+        ${state.cvError ? `<div class="warn-box">${icon('alert')}<span>${esc(state.cvError)}</span></div>` : ''}
+        <p class="cv-privacy">${icon('lock')}<span>CV-mu dibaca langsung di perangkat ini dan tidak dikirim ke mana pun. Yang disimpan hanya ringkasannya (jenjang, jurusan, domisili, lama pengalaman, dan kata kunci keahlian) supaya rekomendasi tetap ada saat kamu kembali. Bisa dihapus kapan saja.</span></p>
+      </div>
+      <div class="cv-steps">
+        <div><i>1</i><b>Upload CV</b><span>CV ramah ATS dari Word atau Google Docs paling mudah dibaca.</span></div>
+        <div><i>2</i><b>Cek hasil bacaan</b><span>Jurusan, jenjang, domisili, dan kekuatanmu bisa dikoreksi.</span></div>
+        <div><i>3</i><b>Lihat yang cocok</b><span>Lowongan dikelompokkan per arah karier, lengkap dengan alasannya.</span></div>
+      </div>`;
+    return;
+  }
+  const p = state.cv;
+  root.innerHTML = `
+    <div class="cv-bar">
+      <span class="cv-bar-icon">${icon('doc')}</span>
+      <div class="cv-bar-text"><b>${p.readable ? `CV dibaca ${dateText(p.at, true)}` : 'CV-mu belum bisa dibaca sebagai teks'}</b><span>${esc(p.kind || 'CV')} · ringkasannya tersimpan di perangkat ini saja</span></div>
+      <div class="cv-bar-actions">
+        <button class="btn outline sm" type="button" data-cv-pick>${icon('upload')}Ganti CV</button>
+        <button class="btn outline sm" type="button" data-cv-clear>${icon('trash')}Hapus</button>
+      </div>
+    </div>
+    ${state.cvError ? `<div class="warn-box">${icon('alert')}<span>${esc(state.cvError)}</span></div>` : ''}
+    ${p.readable ? '' : `<div class="warn-box">${icon('alert')}<span>Kemungkinan CV-mu berupa gambar atau hasil scan, jadi isinya tidak terbaca. Kamu tetap bisa mengisi jenjang, jurusan, domisili, dan bidang yang kamu minati secara manual di bawah ini untuk mendapat rekomendasi.</span></div>`}
+    <div class="cv-grid">
+      ${profileHTML(p)}
+      <div class="cv-side">${atsHTML(p)}<div id="cv-tips">${tipsHTML(p)}</div></div>
+    </div>
+    <div id="cv-recs"></div>`;
+  renderRecs();
+}
+
+function profileHTML(p) {
+  const lab = p.levelLabel && LEVEL_OF[p.levelLabel] ? p.levelLabel : '';
+  const provs = [...new Set(state.all.map((j) => j.province).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'id'));
+  if (p.prov && !provs.includes(p.prov)) provs.unshift(p.prov);
+  const sen = seniorityOf(p.months);
+  const readMonths = !p.months ? 'Belum ada pengalaman kerja yang terbaca dari CV.'
+    : p.months < 12 ? `Terbaca ${p.months} bulan dari CV.` : `Terbaca sekitar ${String(Math.round(p.months / 12 * 10) / 10).replace('.', ',')} tahun dari CV.`;
+  const intern = p.internMonths ? ` Magang/PKL ${p.internMonths} bulan.` : '';
+  const used = new Set((p.signals || []).map((s) => s.id));
+  return `<div class="tile cv-card">
+    <div class="tile-head"><span class="tile-title">Yang terbaca dari CV-mu</span><span class="tile-sub">Ada yang kurang pas? Ubah di sini.</span></div>
+    <div class="cv-fields">
+      <div class="cv-field"><label for="cv-level">Pendidikan terakhir</label>
+        <div class="select"><select id="cv-level"><option value="">Belum terbaca</option>${Object.keys(LEVEL_OF).map((k) => `<option value="${k}"${k === lab ? ' selected' : ''}>${LEVEL_TEXT[k]}</option>`).join('')}</select>${icon('chev')}</div>
+        ${LEVEL_OF[lab] >= 40 ? `<span class="cv-check"><input type="checkbox" id="cv-study"${p.studying ? ' checked' : ''}><label for="cv-study">Masih kuliah / belum lulus</label></span>` : ''}
+      </div>
+      <div class="cv-field"><label for="cv-major">Jurusan</label>
+        <input class="cv-input" id="cv-major" list="majors" autocomplete="off" placeholder="mis. Akuntansi" value="${esc(p.major || p.majorOther || '')}">
+      </div>
+      <div class="cv-field"><label for="cv-prov">Domisili</label>
+        <div class="select"><select id="cv-prov"><option value="">Tidak disebut</option>${provs.map((v) => `<option${v === p.prov ? ' selected' : ''}>${esc(v)}</option>`).join('')}</select>${icon('chev')}</div>
+        ${p.city ? `<small>${esc(cityLabel(p.city))}</small>` : ''}
+      </div>
+      <div class="cv-field"><label for="cv-exp">Pengalaman kerja</label>
+        <div class="select"><select id="cv-exp">${Object.keys(SENIORITY_LABEL).map((k) => `<option value="${k}"${k === sen ? ' selected' : ''}>${SENIORITY_LABEL[k]}</option>`).join('')}</select>${icon('chev')}</div>
+        <small>${esc(readMonths + intern)}</small>
+      </div>
+    </div>
+    <div class="cv-sigs-wrap">
+      <span class="flabel">Kekuatanmu</span>
+      <div class="cv-sigs" id="cv-sigs">${sigsHTML(p)}</div>
+      <div class="select sm"><select id="cv-add" aria-label="Tambah bidang yang kamu minati"><option value="">＋ Tambah bidang yang kamu minati</option>${CLUSTERS.filter((c) => !used.has(c.id)).map((c) => `<option value="${c.id}">${esc(c.label)}</option>`).join('')}</select>${icon('chev')}</div>
+    </div>
+  </div>`;
+}
+
+function sigsHTML(p) {
+  const list = (p.signals || []).filter((s) => isStrong(s) || s.off);
+  if (!list.length) return '<p class="note">Belum ada bidang yang terbaca kuat. Tambahkan bidang yang kamu minati di bawah ini.</p>';
+  return list.map((s) => {
+    const c = CLUSTER_BY_ID.get(s.id);
+    const src = sourcesOf(s).filter((k) => !['ringkasan', 'umum', 'pendidikan'].includes(k) || sourcesOf(s).length === 1);
+    const from = src.map((k) => (k === 'jurusan' ? 'jurusan' : SOURCE_LONG[k])).join(', ');
+    return `<button type="button" class="sig${s.off ? ' off' : ''}" data-cv-sig="${s.id}" aria-pressed="${!s.off}" title="${s.off ? 'Pakai lagi' : 'Jangan pakai bidang ini'}">
+      <span><b>${esc(c ? c.label : s.id)}</b><small>${esc(from ? `dari ${from}` : '')}</small></span>${icon(s.off ? 'plus' : 'x')}</button>`;
+  }).join('');
+}
+
+function atsHTML(p) {
+  const r = atsReport(p);
+  const items = r.items.slice().sort((a, b) => a.ok - b.ok);
+  const tone = r.ok === r.total ? 'green' : r.ok >= r.total - 2 ? 'yellow' : 'pink';
+  return `<div class="tile cv-card">
+    <div class="tile-head"><span class="tile-title">Cek ramah ATS</span><span class="score-pill ${tone}">${r.ok}/${r.total}</span></div>
+    <p class="tile-sub">ATS (Applicant Tracking System) adalah sistem yang dipakai banyak perusahaan untuk menyaring CV secara otomatis.</p>
+    <ul class="ats-list">${items.map((i) => `<li class="${i.ok ? 'ok' : 'no'}">${icon(i.ok ? 'check' : 'alert')}<div><b>${esc(i.label)}</b>${!i.ok && i.tip ? `<span>${esc(i.tip)}</span>` : ''}</div></li>`).join('')}</ul>
+  </div>`;
+}
+
+function tipsHTML(p) {
+  if (!p.readable) return '';
+  const tips = keywordTips(p);
+  return `<div class="tile cv-card">
+    <div class="tile-head"><span class="tile-title">Kata kunci yang bisa ditambahkan</span></div>
+    ${tips.length ? `<p class="tile-sub">Kata yang umum dicari di bidangmu tapi belum terlihat di CV. Tambahkan hanya yang memang kamu kuasai, dengan istilah yang sama.</p>
+      ${tips.map((t) => `<div class="tip-row"><b>${esc(t.label)}</b><div class="chips">${t.missing.map((m) => `<span class="tag">${esc(m)}</span>`).join('')}</div></div>`).join('')}`
+      : '<p class="tile-sub">CV-mu sudah memuat kata kunci umum di bidang-bidang terkuatmu.</p>'}
+  </div>`;
+}
+
+function whyHTML(parts) {
+  const why = whyText(parts, state.cv, prettyTerm);
+  if (!why.length) return '';
+  return `<p class="why">${icon('check')}<span><b>Cocok karena</b> ${esc(why.join(' · '))}</span></p>`;
+}
+
+function renderRecs() {
+  const box = $('#cv-recs');
+  if (!box) return;
+  const p = state.cv;
+  if (!state.loaded) {
+    box.innerHTML = `<div class="job-list">${Array.from({ length: 3 }, () => '<div class="skeleton"></div>').join('')}</div>`;
+    return;
+  }
+  const near = state.cvNear;
+  const rec = recommend(state.all, p, { ref: state.ref, near: near !== 'all', onlyProv: near === 'prov' ? p.prov : '' });
+  const sen = seniorityOf(p.months);
+  const bits = [
+    p.levelLabel ? `pendidikan ${p.levelLabel}${p.studying ? ' (masih kuliah, magang diutamakan)' : ''}` : '',
+    p.studying ? '' : sen === 'fresh' ? 'posisi untuk fresh graduate diutamakan' : `pengalaman ${SENIORITY_LABEL[sen].toLowerCase()}`,
+    p.prov && near !== 'all' ? (near === 'prov' ? `hanya di ${p.prov}` : `dekat ${p.prov} diutamakan`) : ''
+  ].filter(Boolean);
+  const nearSel = p.prov ? `<div class="select sm"><select id="cv-near" aria-label="Lokasi">
+      <option value="near"${near === 'near' ? ' selected' : ''}>Utamakan dekat domisili</option>
+      <option value="prov"${near === 'prov' ? ' selected' : ''}>Hanya di ${esc(p.prov)}</option>
+      <option value="all"${near === 'all' ? ' selected' : ''}>Seluruh Indonesia</option></select>${icon('chev')}</div>` : '';
+  const head = `<div class="cv-recs-head">
+      <div><h2 class="title">${ribu(rec.count)} lowongan cocok dengan CV-mu</h2>
+      <p class="note">${esc(bits.length ? `Disesuaikan: ${bits.join(', ')}.` : '')} Lowongan dengan syarat pendidikan di atas jenjangmu tidak ditampilkan.</p></div>
+      ${nearSel}
+    </div>`;
+  if (!rec.groups.length) {
+    box.innerHTML = `${head}<div class="empty">${emptyArt('foto-kantor.webp', 'yellow')}<b>Belum ketemu yang cocok</b><p>Isi jurusanmu atau tambahkan bidang yang kamu minati di kotak "Yang terbaca dari CV-mu", supaya Tracking Loker punya arah untuk dicarikan.</p></div>`;
+    return;
+  }
+  box.innerHTML = head + rec.groups.map((g) => {
+    const shown = state.cvShown[g.key] || CV_STEP;
+    const srcs = g.sources.filter((k) => !['ringkasan', 'umum', 'pendidikan'].includes(k) || g.sources.length === 1);
+    const from = srcs.map((k) => (k === 'jurusan' ? `jurusan ${p.major}` : SOURCE_LONG[k])).join(', ');
+    const sub = g.key === 'top' ? 'Nyambung dengan beberapa bagian CV-mu sekaligus.'
+      : g.key === 'jurusan' ? 'Sesuai bidang jurusanmu, walaupun pengalamanmu ada di bidang lain.'
+        : from ? `Dari ${from}.` : '';
+    const rest = g.items.length - shown;
+    return `<section class="cv-group${g.key === 'top' ? ' best' : ''}">
+      <div class="cv-group-head"><div><h3>${esc(g.title)}</h3><p>${esc(sub)}</p></div><span class="count">${ribu(g.total)} lowongan</span></div>
+      <div class="job-list">${g.items.slice(0, shown).map((it) => cardHTML(it.job, false, whyHTML(it.parts))).join('')}</div>
+      ${rest > 0 ? `<div class="more-row"><button class="btn outline sm" type="button" data-cv-more="${esc(g.key)}">Tampilkan ${Math.min(CV_STEP, rest)} lagi</button></div>` : ''}
+    </section>`;
+  }).join('');
+}
+
+/** Bagian ringan yang berubah saat profil diubah tanpa membangun ulang kolom isian. */
+function refreshCV() {
+  const sigs = $('#cv-sigs');
+  if (sigs) sigs.innerHTML = sigsHTML(state.cv);
+  const tips = $('#cv-tips');
+  if (tips) tips.innerHTML = tipsHTML(state.cv);
+  state.cvShown = {};
+  renderRecs();
+  renderCvPromo();
+}
+
+function editCV(patch, full = false) {
+  Object.assign(state.cv, patch);
+  storeCV();
+  if (full) renderCV(); else refreshCV();
+  if (full) renderCvPromo();
+}
+
+function bindCV() {
+  $('#cv-file').addEventListener('change', (e) => handleCVFile(e.target.files && e.target.files[0]));
+  const root = $('#cv-root');
+  root.addEventListener('dragover', (e) => {
+    const drop = e.target.closest('.cv-drop');
+    if (!drop) return;
+    e.preventDefault();
+    drop.classList.add('over');
+  });
+  root.addEventListener('dragleave', (e) => e.target.closest('.cv-drop')?.classList.remove('over'));
+  root.addEventListener('drop', (e) => {
+    if (!e.target.closest('.cv-drop')) return;
+    e.preventDefault();
+    handleCVFile(e.dataTransfer.files && e.dataTransfer.files[0]);
+  });
+  root.addEventListener('keydown', (e) => {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches('.cv-drop[data-cv-pick]')) {
+      e.preventDefault();
+      $('#cv-file').click();
+    }
+  });
+  let typing;
+  root.addEventListener('input', (e) => {
+    if (e.target.id !== 'cv-major') return;
+    clearTimeout(typing);
+    const v = e.target.value.trim();
+    typing = setTimeout(() => {
+      const m = findMajor(v);
+      editCV({ major: m ? m.label : '', majorOther: m ? '' : v, majorAlso: [] });
+    }, MAJORS.some((m) => m.label === v) ? 0 : 450);
+  });
+  root.addEventListener('change', (e) => {
+    const t = e.target;
+    const p = state.cv;
+    if (!p) return;
+    if (t.id === 'cv-level') {
+      const deg = LEVEL_OF[t.value];
+      const studying = deg >= 40 ? p.studying : false;
+      editCV({ levelLabel: t.value, level: t.value ? (studying ? 30 : deg) : null, studying, smk: t.value === 'SMK' }, true);
+    } else if (t.id === 'cv-study') {
+      editCV({ studying: t.checked, level: t.checked ? 30 : LEVEL_OF[p.levelLabel] }, true);
+    } else if (t.id === 'cv-prov') {
+      state.cvNear = t.value ? 'near' : 'all';
+      editCV({ prov: t.value, city: '' }, true);
+    } else if (t.id === 'cv-exp') {
+      editCV({ months: SENIORITY_MONTHS[t.value] }, true);
+    } else if (t.id === 'cv-near') {
+      state.cvNear = t.value;
+      state.cvShown = {};
+      renderRecs();
+    } else if (t.id === 'cv-add' && t.value) {
+      const signals = (p.signals || []).slice();
+      const had = signals.find((s) => s.id === t.value);
+      if (had) had.off = false; else signals.unshift({ id: t.value, w: 6, src: { minat: [] } });
+      editCV({ signals }, true);
+    }
+  });
+}
+
+function cvClick(t) {
+  if (t.closest('[data-cv-pick]')) { $('#cv-file').click(); return true; }
+  if (t.closest('[data-cv-clear]')) {
+    if (window.confirm('Hapus ringkasan CV dari perangkat ini?')) {
+      state.cv = null;
+      state.cvError = '';
+      storeCV();
+      renderCV();
+      renderCvPromo();
+    }
+    return true;
+  }
+  const sig = t.closest('[data-cv-sig]');
+  if (sig && state.cv) {
+    const signals = state.cv.signals.map((s) => (s.id === sig.dataset.cvSig ? { ...s, off: !s.off } : s));
+    editCV({ signals });
+    return true;
+  }
+  const more = t.closest('[data-cv-more]');
+  if (more) {
+    const key = more.dataset.cvMore;
+    state.cvShown[key] = (state.cvShown[key] || CV_STEP) + CV_STEP;
+    const y = window.scrollY;
+    renderRecs();
+    window.scrollTo({ top: y });
+    return true;
+  }
+  return false;
+}
+
+function renderCompare(job, detail) {
+  const box = $('#d-cv');
+  if (!box || !state.cv) return;
+  const c = compareJob(state.cv, job, detail || {});
+  const row = (r) => `<li class="${r.ok === true ? 'ok' : r.ok === false ? 'no' : 'maybe'}">${icon(r.ok === true ? 'check' : 'alert')}<div><b>${esc(r.label)}</b><span>${esc(r.text)}</span></div></li>`;
+  box.innerHTML = `<h3>${icon('doc')}Dibanding CV-mu</h3>
+    ${c.rows.length ? `<ul class="ats-list">${c.rows.map(row).join('')}</ul>` : ''}
+    ${c.have.length ? `<div class="cmp-terms"><span>Diminta lowongan dan sudah ada di CV-mu</span><div class="chips">${c.have.map((t) => `<span class="tag ok">${esc(prettyTerm(t))}</span>`).join('')}</div></div>` : ''}
+    ${c.missing.length ? `<div class="cmp-terms"><span>Diminta lowongan, belum terlihat di CV-mu</span><div class="chips">${c.missing.map((t) => `<span class="tag no">${esc(prettyTerm(t))}</span>`).join('')}</div></div>
+      <p class="note">Kalau kamu memang menguasainya, tulis dengan istilah yang sama di CV supaya terbaca sistem ATS.</p>` : ''}
+    ${detail === null ? '<p class="note">Mencocokkan dengan kualifikasi lowongan…</p>' : ''}`;
+}
+
 // ---------------------------------------------------------------- tampilan & event
 
 function viewFromHash() {
   const h = location.hash.replace('#', '');
-  return ['cari', 'pasar', 'simpan'].includes(h) ? h : 'cari';
+  return ['cari', 'cv', 'pasar', 'simpan'].includes(h) ? h : 'cari';
 }
 
 function setView(view, scroll = true) {
@@ -900,6 +1342,7 @@ function setView(view, scroll = true) {
   for (const el of document.querySelectorAll('.tab')) el.classList.toggle('on', el.dataset.view === view);
   if (view === 'pasar') renderPasar();
   if (view === 'simpan') renderSaved();
+  if (view === 'cv') renderCV();
   if (scroll) window.scrollTo({ top: 0 });
 }
 
@@ -952,8 +1395,10 @@ function bindEvents() {
   $('#open-filters').addEventListener('click', () => openFilters(true));
   window.addEventListener('hashchange', () => setView(viewFromHash()));
 
+  bindCV();
   document.addEventListener('click', (e) => {
     const t = e.target;
+    if (cvClick(t)) return;
     const save = t.closest('[data-save]');
     if (save) { e.preventDefault(); toggleSave(save.dataset.save); return; }
     if (t.closest('[data-close]') || t.closest('#scrim')) {

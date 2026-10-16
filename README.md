@@ -41,6 +41,15 @@ Setiap hari ada pesan baru untuk yang masih mencari kerja, dari "Istirahat boleh
 ### Cari sesuai jurusan
 Ketik jurusanmu, misalnya Akuntansi, DKV, Teknik Mesin, atau singkatan jurusan SMK seperti TKJ dan AKL, lalu Tracking Loker menampilkan lowongan yang cocok. Karena lowongan jarang mencantumkan jurusan secara rapi, kecocokannya dilihat dari bidang pekerjaan dan judul lowongan. Ada 29 rumpun jurusan, dari kesehatan, teknik, dan bisnis sampai perhotelan, pertanian, dan pelayaran.
 
+### Cocokkan dengan CV-mu
+Upload CV dalam bentuk PDF atau Word, dan Tracking Loker membaca jenjang pendidikan, jurusan, domisili, lama pengalaman kerja, serta kata kunci dari pengalaman kerja/magang, organisasi, kepanitiaan, lomba, keahlian, dan sertifikat. Hasilnya dikelompokkan per arah karier, misalnya "Sesuai jurusan Teknik Mesin" dan "Pemasaran digital & konten" untuk lulusan teknik yang berpengalaman di marketing. Setiap lowongan diberi alasan singkat kenapa cocok.
+
+Rekomendasinya menyesuaikan kualifikasi: lowongan dengan syarat pendidikan di atas jenjangmu tidak ditampilkan, posisi senior diturunkan untuk fresh graduate, magang diutamakan untuk yang masih kuliah, dan lowongan dekat domisili muncul lebih dulu. Hasil bacaan bisa dikoreksi kapan saja. Ada juga cek ramah ATS (keterbacaan, kontak, judul bagian, tata letak, panjang CV), saran kata kunci yang umum dicari di bidangmu, dan perbandingan langsung dengan kualifikasi setiap lowongan saat detailnya dibuka.
+
+CV dibaca langsung di perangkatmu dan tidak dikirim ke mana pun. Yang disimpan di perangkat hanya ringkasannya, tanpa nama, kontak, atau isi CV, dan bisa dihapus dengan satu ketukan.
+
+![Rekomendasi lowongan dari CV](layar-cv.png)
+
 ### Cari dalam hitungan milidetik
 Ketik posisi, nama perusahaan, atau kota, dan hasilnya berubah saat mengetik. Saring berdasarkan provinsi, kota/kabupaten, bidang pekerjaan, tipe kerja (full time, kontrak, magang, paruh waktu), pendidikan, gaji, waktu posting, dan sumber. Pilihan provinsi, kota, bidang, tipe kerja, dan sumber menampilkan jumlah lowongannya sebelum dipilih. Kombinasi filter tersimpan di alamat halaman dan bisa dibagikan.
 
@@ -77,7 +86,7 @@ Lowongan resmi tidak pernah memungut biaya. Tracking Loker mengingatkan hal ini 
 
 ## Dibangun dengan
 
-Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · Google Sans Flex
+Python (pustaka standar) · GitHub Actions · JavaScript · GitHub Pages · PDF.js · Mammoth · Google Sans Flex
 
 ---
 
