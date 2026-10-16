@@ -6,7 +6,7 @@
 
 **Semua lowongan kerja di Indonesia dalam satu layar, diperbarui sendiri setiap pagi.**
 
-[**Buka Tracking Loker →**](https://ghozi-abdullah.github.io/Tracking-Loker/)
+[**Buka Tracking Loker →**](https://trackingloker.github.io/Tracking-Loker/)
 
 </div>
 
