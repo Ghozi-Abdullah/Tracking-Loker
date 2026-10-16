@@ -45,6 +45,9 @@ function emptyArt(img, tone = '') {
 const SAVED_KEY = 'loker-radar:saved';
 // Ringkasan CV (bukan isi CV) untuk fitur Cocokkan CV.
 const CV_KEY = 'loker-radar:cv';
+// Diisi loadCV() kalau ringkasan tersimpan dibuat oleh pembaca CV versi lama.
+let cvStale = false;
+const CV_STALE_MSG = 'Pembaca CV sudah diperbarui supaya lebih akurat. Upload ulang CV-mu untuk melihat hasil terbaru.';
 const $ = (s, root = document) => root.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const nowSec = () => Math.floor(Date.now() / 1000);
@@ -69,7 +72,7 @@ const state = {
   loaded: false,
   cv: loadCV(),
   cvBusy: '',
-  cvError: '',
+  cvError: cvStale ? CV_STALE_MSG : '',
   cvShown: {},
   cvNear: 'near'
 };
@@ -924,7 +927,12 @@ const ACRONYM = new Set(['sql', 'mysql', 'seo', 'sem', 'crm', 'kpi', 'k3', 'hse'
 function loadCV() {
   try {
     const p = JSON.parse(localStorage.getItem(CV_KEY) || 'null');
-    return p && p.v === CV_VERSION ? p : null;
+    if (!p) return null;
+    if (p.v === CV_VERSION) return p;
+    // Ringkasan lama dibuang supaya CV dibaca ulang dengan aturan terbaru.
+    cvStale = true;
+    localStorage.removeItem(CV_KEY);
+    return null;
   } catch { return null; }
 }
 function storeCV() {

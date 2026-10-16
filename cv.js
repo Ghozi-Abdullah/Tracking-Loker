@@ -3,7 +3,7 @@
 // lama pengalaman, dan kata kunci dari kamus di bawah), bukan isi CV. Diuji di cv.test.mjs.
 import { MAJORS, fold, cityLabel } from './logic.js';
 
-export const CV_VERSION = 1;
+export const CV_VERSION = 2;
 
 // ---------------------------------------------------------------- kamus bidang
 // terms = kata yang dicari di CV dan di kualifikasi lowongan; fns = bidang Karirhub; kw = kata di judul lowongan;
