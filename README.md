@@ -51,7 +51,7 @@ CV dibaca langsung di perangkatmu dan tidak dikirim ke mana pun. Yang disimpan d
 ![Rekomendasi lowongan dari CV](layar-cv.png)
 
 ### Cari dalam hitungan milidetik
-Ketik posisi, nama perusahaan, atau kota, dan hasilnya berubah saat mengetik. Saring berdasarkan provinsi, kota/kabupaten, bidang pekerjaan, tipe kerja (full time, kontrak, magang, paruh waktu), pendidikan, gaji, waktu posting, dan sumber. Pilihan provinsi, kota, bidang, tipe kerja, dan sumber menampilkan jumlah lowongannya sebelum dipilih. Kombinasi filter tersimpan di alamat halaman dan bisa dibagikan.
+Ketik posisi, nama perusahaan, atau kota, dan hasilnya berubah saat mengetik. Saring berdasarkan provinsi, kota/kabupaten, bidang pekerjaan, tipe kerja (full time, kontrak, magang, paruh waktu), pendidikan, gaji, waktu posting, dan sumber. Pilihan provinsi, kota, bidang, tipe kerja, dan sumber menampilkan jumlah lowongannya sebelum dipilih. Kombinasi filter tersimpan di alamat halaman dan bisa dibagikan. Menu dan kotak pencarian tetap menempel di atas saat halaman digulir, jadi pencarian bisa diubah tanpa kembali ke atas.
 
 ### Detail lowongan lengkap
 Buka satu lowongan untuk melihat gaji, lokasi, syarat pendidikan, bidang, industri, tanggal posting, batas tayang, dan platform asalnya, lalu lamar lewat halaman aslinya dengan satu ketukan. Setiap lowongan juga punya tautan sendiri yang bisa dikirim ke teman.

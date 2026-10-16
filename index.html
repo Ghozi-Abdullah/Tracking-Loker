@@ -55,6 +55,9 @@
       <a href="#simpan" data-view="simpan" class="tab" aria-label="Disimpan"><svg><use href="#i-bookmark"/></svg><span>Disimpan</span><i id="saved-count" hidden></i></a>
     </nav>
   </header>
+  <button class="mini-search" id="mini-search" type="button" aria-label="Ubah pencarian">
+    <svg><use href="#i-search"/></svg><span class="mini-text" id="mini-search-text">Posisi, jurusan, atau lokasi</span><span class="mini-go">Ubah</span>
+  </button>
 
   <main class="main">
     <!-- ================= Lowongan ================= -->
@@ -82,25 +85,23 @@
         </div>
       </div>
 
-      <div class="finder">
-        <form class="searchbar" id="searchbar" role="search">
-          <label class="search-field">
-            <svg><use href="#i-search"/></svg>
-            <input id="q" type="search" placeholder="Posisi atau perusahaan" autocomplete="off" enterkeyhint="search" aria-label="Posisi atau perusahaan">
-          </label>
-          <label class="search-jur">
-            <svg><use href="#i-cap"/></svg>
-            <input id="jur" type="search" list="majors" placeholder="Jurusan, mis. Akuntansi" autocomplete="off" enterkeyhint="search" aria-label="Jurusan">
-            <datalist id="majors"></datalist>
-          </label>
-          <label class="search-prov">
-            <svg><use href="#i-pin"/></svg>
-            <select id="prov-top" aria-label="Provinsi"></select>
-          </label>
-          <button class="btn cta" type="submit">Cari <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button>
-        </form>
-        <div class="quick" id="quick" aria-label="Cari sesuai jurusan"></div>
-      </div>
+      <form class="searchbar" id="searchbar" role="search">
+        <label class="search-field">
+          <svg><use href="#i-search"/></svg>
+          <input id="q" type="search" placeholder="Posisi atau perusahaan" autocomplete="off" enterkeyhint="search" aria-label="Posisi atau perusahaan">
+        </label>
+        <label class="search-jur">
+          <svg><use href="#i-cap"/></svg>
+          <input id="jur" type="search" list="majors" placeholder="Jurusan, mis. Akuntansi" autocomplete="off" enterkeyhint="search" aria-label="Jurusan">
+          <datalist id="majors"></datalist>
+        </label>
+        <label class="search-prov">
+          <svg><use href="#i-pin"/></svg>
+          <select id="prov-top" aria-label="Provinsi"></select>
+        </label>
+        <button class="btn cta" type="submit">Cari <span class="cta-dot"><svg><use href="#i-play"/></svg></span></button>
+      </form>
+      <div class="quick" id="quick" aria-label="Cari sesuai jurusan"></div>
 
       <div class="moods" id="moods" aria-label="Mulai dari sini"></div>
       <a class="cv-promo" id="cv-promo" href="#cv">

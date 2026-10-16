@@ -163,7 +163,6 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 /* ---------- Hero ---------- */
 .hero { display: grid; grid-template-columns: minmax(0, 1.08fr) minmax(0, .92fr); gap: 32px; align-items: center; padding: 26px 0 4px; }
 .hero-copy { display: grid; min-width: 0; }
-.finder { display: grid; gap: 14px; }
 .searchbar {
   display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr) 230px auto; gap: 4px; align-items: center;
   padding: 8px; background: var(--card); border-radius: 999px; box-shadow: var(--shadow);
@@ -179,7 +178,7 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .search-jur, .search-prov { position: relative; box-shadow: inset 1.5px 0 0 var(--line); border-radius: 0; }
 .search-prov select { appearance: none; -webkit-appearance: none; cursor: pointer; text-overflow: ellipsis; }
 .searchbar .btn.cta { height: 56px; padding-left: 26px; }
-.quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.quick { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: -12px; }
 .quick-label { font-size: 13.5px; font-weight: 600; color: var(--ink-2); margin-right: 4px; }
 .quick .chip { background: transparent; box-shadow: inset 0 0 0 1.5px var(--line-2); height: 36px; }
 .quick .chip:hover { background: var(--card); }
@@ -616,6 +615,33 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
 .tag.ok { background: var(--green-soft); color: #18603A; }
 .tag.no { background: var(--pink-soft); color: #9C2B53; }
 
+/* ---------- Header dan pencarian yang menempel saat digulir ---------- */
+/* Latar pita sama persis dengan latar halaman (gradasi yang menempel di layar), jadi tidak tembus pandang. */
+:root {
+  --top-h: 76px; --search-h: 72px;
+  --band: radial-gradient(900px 600px at 0% -10%, #FFFBF6 0%, transparent 70%) fixed,
+    radial-gradient(800px 600px at 100% 0%, #FDEBD9 0%, transparent 60%) fixed, var(--bg);
+}
+.mini-search { display: none; }
+@media (min-width: 821px) {
+  html { scroll-padding-top: calc(var(--top-h) + 16px); }
+  .top {
+    position: sticky; top: 0; z-index: 20; max-width: none;
+    padding: calc(12px + env(safe-area-inset-top, 0px)) max(28px, calc((100% - 1264px) / 2)) 12px;
+    transition: background-color .2s, box-shadow .2s;
+  }
+  body.scrolled .top { background: var(--band); box-shadow: 0 1px 0 var(--line), 0 16px 28px -24px rgba(30, 34, 87, .35); }
+  /* Saat kotak pencarian menempel, latar header diperpanjang ke belakangnya. */
+  body.search-stuck .top { box-shadow: none; }
+  body.search-stuck .top::after {
+    content: ""; position: absolute; left: 0; right: 0; top: 100%; height: calc(var(--search-h) + 16px); pointer-events: none;
+    background: var(--band); box-shadow: 0 1px 0 var(--line), 0 16px 28px -24px rgba(30, 34, 87, .35);
+  }
+  .searchbar { position: sticky; top: calc(var(--top-h) + 2px); z-index: 25; }
+  body.search-stuck { scroll-padding-top: calc(var(--top-h) + var(--search-h) + 30px); }
+  .filters { top: calc(var(--top-h) + var(--search-h) + 26px); max-height: calc(100vh - var(--top-h) - var(--search-h) - 42px); }
+}
+
 /* ---------- Tablet ---------- */
 @media (max-width: 1160px) {
   .hero { grid-template-columns: minmax(0, 1fr) minmax(0, .8fr); }
@@ -695,6 +721,25 @@ svg { width: 20px; height: 20px; flex-shrink: 0; fill: none; stroke: currentColo
   .trend-empty { grid-template-columns: 1fr; justify-items: center; text-align: center; }
   .trend-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; }
   .trend-panel { padding: 12px 8px 4px; }
+
+  /* Di ponsel, pencarian muncul sebagai pil kecil di atas setelah kotak aslinya lewat. */
+  .mini-search {
+    display: flex; align-items: center; gap: 10px;
+    position: fixed; z-index: 25; left: 12px; right: 12px; top: calc(10px + env(safe-area-inset-top, 0px));
+    height: 52px; padding: 0 7px 0 18px; border: 0; border-radius: 999px; cursor: pointer; text-align: left;
+    background: var(--card); color: var(--ink); font-size: 15px;
+    box-shadow: 0 1px 2px rgba(30, 34, 87, .06), 0 14px 30px -12px rgba(30, 34, 87, .42);
+    transform: translateY(calc(-100% - 24px)); visibility: hidden;
+    transition: transform .25s cubic-bezier(.2, .8, .2, 1), visibility 0s .25s;
+  }
+  body.search-away .mini-search { transform: none; visibility: visible; transition: transform .25s cubic-bezier(.2, .8, .2, 1); }
+  .mini-search > svg { color: var(--ink-2); }
+  .mini-text { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .mini-text.placeholder { color: var(--ink-3); }
+  .mini-go {
+    flex-shrink: 0; height: 38px; padding: 0 16px; display: inline-grid; place-items: center; border-radius: 999px;
+    background: var(--yellow); color: var(--navy); font-size: 14px; font-weight: 600;
+  }
 
   .tab:not(.on) > span { display: none; }
   .wide-only { display: none; }

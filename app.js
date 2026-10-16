@@ -157,9 +157,68 @@ function apply(scrollTop = true) {
   renderResults();
   syncURL();
   if (state.view === 'pasar') renderPasar();
-  if (scrollTop && state.view === 'cari' && window.scrollY > $('.layout').offsetTop) {
-    window.scrollTo({ top: $('.layout').offsetTop - 12, behavior: 'smooth' });
+  if (scrollTop && state.view === 'cari' && window.scrollY > $('.layout').offsetTop - pinOffset()) scrollToResults(true);
+}
+
+// ---------------------------------------------------------------- header & pencarian menempel
+
+const WIDE = matchMedia('(min-width: 821px)');
+let pinFrame = 0;
+
+function measurePins() {
+  const s = document.documentElement.style;
+  s.setProperty('--top-h', `${$('.top').offsetHeight}px`);
+  const h = $('#searchbar').offsetHeight;
+  if (h) s.setProperty('--search-h', `${h}px`);
+}
+
+function updatePins() {
+  pinFrame = 0;
+  const body = document.body;
+  const cari = state.view === 'cari';
+  const r = $('#searchbar').getBoundingClientRect();
+  body.classList.toggle('scrolled', window.scrollY > 4);
+  // Layar lebar: kotak pencarian asli menempel di bawah header.
+  body.classList.toggle('search-stuck', cari && WIDE.matches && r.top <= $('.top').offsetHeight + 3);
+  // Ponsel: setelah kotak pencarian lewat, muncul pil pencarian kecil di atas.
+  body.classList.toggle('search-away', cari && !WIDE.matches && r.bottom < 0);
+}
+function schedulePins() { if (!pinFrame) pinFrame = requestAnimationFrame(updatePins); }
+
+/** Tinggi bagian atas layar yang tertutup header, kotak pencarian, atau pil pencarian. */
+function pinOffset() {
+  if (!WIDE.matches) return 76;
+  return $('.top').offsetHeight + (state.view === 'cari' ? $('#searchbar').offsetHeight + 18 : 0) + 12;
+}
+
+function scrollToResults(smooth = false) {
+  const top = $('.layout').getBoundingClientRect().top + window.scrollY - pinOffset();
+  window.scrollTo({ top: Math.max(0, top), behavior: smooth ? 'smooth' : 'auto' });
+}
+
+function renderMiniSearch() {
+  const f = state.f;
+  const parts = [f.q, f.jur, f.city ? cityLabel(f.city) : f.prov].filter(Boolean);
+  const el = $('#mini-search-text');
+  el.textContent = parts.length ? parts.join(' · ') : 'Posisi, jurusan, atau lokasi';
+  el.classList.toggle('placeholder', !parts.length);
+}
+
+function bindPins() {
+  window.addEventListener('scroll', schedulePins, { passive: true });
+  window.addEventListener('resize', schedulePins);
+  WIDE.addEventListener?.('change', () => { measurePins(); schedulePins(); });
+  if ('ResizeObserver' in window) {
+    const ro = new ResizeObserver(() => { measurePins(); schedulePins(); });
+    ro.observe($('.top'));
+    ro.observe($('#searchbar'));
   }
+  $('#mini-search').addEventListener('click', () => {
+    const top = $('#searchbar').getBoundingClientRect().top + window.scrollY - 16;
+    window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
+  });
+  measurePins();
+  updatePins();
 }
 
 function optionList(entries, allLabel, selected, labelFn = (v) => v) {
@@ -175,6 +234,7 @@ function renderControls() {
   const byProv = countBy(filterJobs(all, f, ref, 'prov'), 'province').sort((a, b) => a[0].localeCompare(b[0], 'id'));
   $('#f-prov').innerHTML = optionList(byProv, 'Semua provinsi', f.prov);
   $('#prov-top').innerHTML = optionList(byProv, 'Seluruh Indonesia', f.prov);
+  renderMiniSearch();
 
   const city = $('#f-city');
   if (f.prov) {
@@ -1363,6 +1423,7 @@ function setView(view, scroll = true) {
   if (view === 'simpan') renderSaved();
   if (view === 'cv') renderCV();
   if (scroll) window.scrollTo({ top: 0 });
+  schedulePins();
 }
 
 let toastTimer;
@@ -1380,12 +1441,16 @@ function openFilters(open) {
   document.body.classList.toggle('lock', open || !!state.openId);
 }
 
+// Kotak pencarian sedang menempel: hasil baru ditampilkan dari atas daftar.
+const searchPinned = () => document.body.classList.contains('search-stuck');
+
 function bindEvents() {
+  bindPins();
   let typing;
   let typingJur;
   $('#q').addEventListener('input', (e) => {
     clearTimeout(typing);
-    typing = setTimeout(() => setFilters({ q: e.target.value.trim() }, false), 160);
+    typing = setTimeout(() => setFilters({ q: e.target.value.trim() }, searchPinned()), 160);
   });
   $('#searchbar').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -1394,7 +1459,7 @@ function bindEvents() {
     clearTimeout(typingJur);
     setFilters({ q: $('#q').value.trim(), jur: $('#jur').value.trim() });
   });
-  $('#prov-top').addEventListener('change', (e) => setFilters({ prov: e.target.value }, false));
+  $('#prov-top').addEventListener('change', (e) => setFilters({ prov: e.target.value }, searchPinned()));
   $('#f-prov').addEventListener('change', (e) => setFilters({ prov: e.target.value }, false));
   $('#f-city').addEventListener('change', (e) => setFilters({ city: e.target.value }, false));
   $('#f-fn').addEventListener('change', (e) => setFilters({ fn: e.target.value }, false));
@@ -1409,10 +1474,13 @@ function bindEvents() {
     const v = e.target.value.trim();
     // Pilihan dari daftar langsung dipakai; ketikan bebas ditunggu sebentar.
     const picked = MAJORS.some((m) => m.label === v);
-    typingJur = setTimeout(() => setFilters({ jur: v }, false), picked ? 0 : 350);
+    typingJur = setTimeout(() => setFilters({ jur: v }, searchPinned()), picked ? 0 : 350);
   });
   $('#open-filters').addEventListener('click', () => openFilters(true));
-  window.addEventListener('hashchange', () => setView(viewFromHash()));
+  window.addEventListener('hashchange', () => {
+    const v = viewFromHash();
+    if (v !== state.view) setView(v);
+  });
 
   bindCV();
   document.addEventListener('click', (e) => {
@@ -1457,15 +1525,16 @@ function bindEvents() {
     if (mood) {
       state.f = { ...EMPTY_FILTERS, types: [], q: state.f.q, jur: state.f.jur, prov: state.f.prov, city: state.f.city, ...JSON.parse(mood.dataset.mood) };
       apply(false);
-      window.scrollTo({ top: $('.layout').getBoundingClientRect().top + window.scrollY - 12, behavior: 'smooth' });
+      scrollToResults(true);
       return;
     }
     const patch = t.closest('[data-patch]');
     if (patch) {
       state.f = { ...EMPTY_FILTERS, types: [], ...JSON.parse(patch.dataset.patch) };
       location.hash = 'cari';
+      setView('cari', false);
       apply(false);
-      window.scrollTo({ top: $('.layout').offsetTop - 12 });
+      scrollToResults();
       return;
     }
     const stack = t.closest('[data-stack]');
@@ -1480,8 +1549,9 @@ function bindEvents() {
         state.f = { ...EMPTY_FILTERS, ...base, types: [], edu: key };
       } else return;
       location.hash = 'cari';
+      setView('cari', false);
       apply(false);
-      window.scrollTo({ top: $('.layout').offsetTop - 12 });
+      scrollToResults();
       return;
     }
     const open = t.closest('[data-open]') || t.closest('.job');
